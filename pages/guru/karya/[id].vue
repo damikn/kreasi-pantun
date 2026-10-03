@@ -128,12 +128,13 @@
 
 <script setup lang="ts">
 import { pertanyaanRefleksi } from '~/data/konten'
-import { fetchSatuKarya, simpanPenilaianGuru } from '~/composables/useKarya'
+import { fetchSatuKarya } from '~/composables/useKarya'
 
 definePageMeta({ layout: 'app', middleware: 'guru-auth' })
 
 const route = useRoute()
 const supabase = useSupabase()
+const sync = useSync()
 const id = route.params.id as string
 
 const karya = ref<any | null>(null)
@@ -212,11 +213,26 @@ async function simpan() {
   if (!supabase) return
   menyimpan.value = true
   try {
-    await simpanPenilaianGuru(supabase, id, Math.round(nilaiInput.value), komentarInput.value)
-    pesanSukses.value = 'Penilaian tersimpan! 🎉'
+    // Offline → diantrekan dan terkirim otomatis saat online (last-write-wins)
+    const res = await sync.tulisTertunda('karya', 'update', {
+      nilai_guru: Math.round(nilaiInput.value),
+      komentar_guru: komentarInput.value?.trim() ? komentarInput.value.trim() : null,
+      dinilai_at: new Date().toISOString(),
+    }, { id })
+    if (!res.ok && !res.queued) throw new Error(res.error)
+    pesanSukses.value = res.queued
+      ? 'Penilaian dicatat! ⏳ Akan terkirim otomatis saat online.'
+      : 'Penilaian tersimpan! 🎉'
     sfx.success()
-    const { data } = await fetchSatuKarya(supabase, id)
-    if (data) karya.value = data
+    // Perbarui tampilan lokal langsung (tanpa menunggu sinkron)
+    if (karya.value) {
+      karya.value.nilai_guru = Math.round(nilaiInput.value)
+      karya.value.komentar_guru = komentarInput.value?.trim() ? komentarInput.value.trim() : null
+    }
+    if (!res.queued) {
+      const { data } = await fetchSatuKarya(supabase, id)
+      if (data) karya.value = data
+    }
   } catch (e: any) {
     console.error(e)
     pesanError.value = /nilai_guru/i.test(String(e?.message ?? ''))

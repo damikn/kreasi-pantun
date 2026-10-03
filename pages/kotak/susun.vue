@@ -94,6 +94,7 @@ definePageMeta({ layout: 'app', middleware: 'auth' })
 const { namaLengkap, siswaId, kotakFenomena, kotakPola, kotakRima, karyaTerakhir } = useSession()
 const supabase = useSupabase()
 const sfx = useSound()
+const sync = useSync()
 
 if (!kotakFenomena.value || !kotakPola.value || !kotakRima.value.rimaA.suffix || !kotakRima.value.rimaB.suffix) {
   await navigateTo('/kotak/fenomena')
@@ -117,7 +118,9 @@ async function simpan() {
   error.value = ''
   const rimaGabung = [...kotakRima.value.rimaA.words, ...kotakRima.value.rimaB.words]
   const basePayload = {
-    siswa_id: (!siswaId.value || siswaId.value.startsWith('lokal-')) ? null : siswaId.value,
+    // siswa_id boleh berupa tempId 'lokal-…' — tulisTertunda mengantrekan
+    // dan me-remap ke id asli saat sinkronisasi.
+    siswa_id: siswaId.value || null,
     app: 'kotak',
     fenomena_id: kotakFenomena.value!.id,
     pola_id: kotakPola.value!.id,
@@ -128,22 +131,17 @@ async function simpan() {
     rima_dipilih: rimaGabung,
   }
   let id = 'lokal-' + Date.now().toString(36)
-  if (supabase && basePayload.siswa_id) {
-    try {
-      // Coba simpan beserta skor; fallback tanpa skor bila kolom belum ada
-      let data, err
-      try {
-        ;({ data, error: err } = await supabase.from('karya').insert({ ...basePayload, skor: hasil.value.score }).select('id').single())
-        if (err) throw err
-      } catch (e: any) {
-        if (String(e?.message || '').includes('skor')) {
-          ;({ data, error: err } = await supabase.from('karya').insert(basePayload).select('id').single())
-          if (err) throw err
-        } else throw e
-      }
-      id = data.id
-    } catch (e) {
-      console.error(e)
+  if (supabase) {
+    // Coba simpan beserta skor; fallback tanpa skor bila kolom belum ada (DB lama).
+    // Bila offline/gagal jaringan → diantrekan dan terkirim otomatis saat online.
+    let res = await sync.tulisTertunda('karya', 'insert', { ...basePayload, skor: hasil.value.score })
+    if (!res.ok && !res.queued && /skor/i.test(res.error ?? '')) {
+      res = await sync.tulisTertunda('karya', 'insert', basePayload)
+    }
+    if (res.ok && res.id) {
+      id = res.id
+    } else if (!res.ok && !res.queued) {
+      console.error(res.error)
       error.value = 'Gagal menyimpan ke database, tapi karyamu tetap ditampilkan.'
     }
   }

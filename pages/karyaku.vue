@@ -41,6 +41,7 @@
               <span v-if="adaPenilaian && k.nilai_guru !== null && k.nilai_guru !== undefined" class="pill bg-violet-100 text-violet-700">🎓 Nilai Guru: {{ k.nilai_guru }}</span>
               <span v-if="namaFenomena(k.fenomena_id)" class="pill bg-violet-100 text-violet-700">{{ namaFenomena(k.fenomena_id) }}</span>
               <span class="pill bg-slate-100 text-slate-500">{{ formatTanggal(k.created_at) }}</span>
+              <span v-if="k.menunggu" class="pill bg-orange-100 text-orange-700">⏳ Menunggu sinkron</span>
             </div>
           </template>
         </PantunCard>
@@ -63,6 +64,7 @@ definePageMeta({ layout: 'app', middleware: 'auth' })
 const { siswaId } = useSession()
 const supabase = useSupabase()
 const supabaseReady = useSupabaseReady()
+const sync = useSync()
 
 const daftar = ref<any[]>([])
 const fenomenaMap = ref<Record<number, string>>({})
@@ -87,34 +89,75 @@ function formatTanggal(s: string) {
 }
 
 async function muat() {
-  if (!supabase || !siswaId.value || siswaId.value.startsWith('lokal-')) return
+  if (!supabase || !siswaId.value) {
+    daftar.value = antreanSebagaiKarya()
+    memuat.value = false
+    return
+  }
+  // Akun masih berupa id sementara (belum tersinkron): server belum punya
+  // datanya → tampilkan hanya item antrean. Setelah sinkron (remap id),
+  // watcher pendingCount di bawah memuat ulang otomatis.
+  if (siswaId.value.startsWith('lokal-')) {
+    daftar.value = antreanSebagaiKarya()
+    memuat.value = false
+    return
+  }
   memuat.value = true
   try {
     const FIELDS = 'id, app, fenomena_id, pola_id, baris1, baris2, baris3, baris4, created_at'
-    const { data, fitur } = await fetchKaryaList(
-      [
-        { fields: `${FIELDS}, skor, nilai_guru, komentar_guru`, fitur: { skor: true, penilaian: true } },
-        { fields: `${FIELDS}, skor`, fitur: { skor: true, penilaian: false } },
-        { fields: FIELDS, fitur: { skor: false, penilaian: false } },
-      ],
-      (fields) => supabase.from('karya')
-        .select(fields)
-        .eq('siswa_id', siswaId.value)
-        .order('created_at', { ascending: false }),
+    // Cache-first saat offline: tampilkan karya terakhir yang tersimpan
+    const { data, fitur } = await sync.bacaCacheAtauJaringan(`karyaku-${siswaId.value}`, () =>
+      fetchKaryaList(
+        [
+          { fields: `${FIELDS}, skor, nilai_guru, komentar_guru`, fitur: { skor: true, penilaian: true } },
+          { fields: `${FIELDS}, skor`, fitur: { skor: true, penilaian: false } },
+          { fields: FIELDS, fitur: { skor: false, penilaian: false } },
+        ],
+        (fields) => supabase.from('karya')
+          .select(fields)
+          .eq('siswa_id', siswaId.value)
+          .order('created_at', { ascending: false }),
+      ).then((r) => ({ daftar: r.data, fitur: r.fitur })),
     )
-    daftar.value = data
-    adaSkor.value = fitur.skor
-    adaPenilaian.value = fitur.penilaian
+    daftar.value = [...antreanSebagaiKarya(), ...(data?.daftar ?? [])]
+    adaSkor.value = data?.fitur.skor ?? adaSkor.value
+    adaPenilaian.value = data?.fitur.penilaian ?? adaPenilaian.value
   } catch (e) { console.error('[karyaku]:', e) }
   try {
-    const rf = await supabase.from('fenomena').select('id, nama')
-    if (rf.error) throw rf.error
+    const { data: rf } = await sync.bacaCacheAtauJaringan('fenomena-map', async () => {
+      const r = await supabase.from('fenomena').select('id, nama')
+      if (r.error) throw r.error
+      return r.data ?? []
+    })
     const m: Record<number, string> = {}
-    for (const f of (rf.data ?? [])) m[f.id] = f.nama
+    for (const f of (rf ?? [])) m[f.id] = f.nama
     fenomenaMap.value = m
   } catch (e) { console.error('[karyaku] fenomena:', e) }
   memuat.value = false
 }
+
+/** Item antrean karya yang belum terkirim → tampil sebagai kartu "menunggu". */
+function antreanSebagaiKarya() {
+  return sync.itemAntreanUntuk('karya')
+    .filter((it) => it.op === 'insert')
+    .map((it) => ({
+      id: `antre-${it.qid}`,
+      app: it.data.app,
+      fenomena_id: it.data.fenomena_id,
+      pola_id: it.data.pola_id,
+      baris1: it.data.baris1,
+      baris2: it.data.baris2,
+      baris3: it.data.baris3,
+      baris4: it.data.baris4,
+      created_at: new Date(it.createdAt).toISOString(),
+      menunggu: true,
+    }))
+}
+
+// Setelah antrean habis tersinkron → muat ulang agar id asli tampil
+watch(() => sync.pendingCount.value, (baru, lama) => {
+  if (baru === 0 && lama > 0) void muat()
+})
 
 onMounted(muat)
 </script>

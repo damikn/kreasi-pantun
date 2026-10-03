@@ -70,6 +70,8 @@
 </template>
 
 <script setup lang="ts">
+import { isNetworkError } from '~/utils/syncUtils'
+
 definePageMeta({ layout: false })
 
 const { namaLengkap, noAbsen, kelas, siswaId, datangKembali, guruAuthed, save } = useSession()
@@ -84,6 +86,20 @@ const loading = ref(false)
 const tombolTeks = ref('Menyimpan...')
 
 const sfx = useSound()
+const sync = useSync()
+
+/** Id sementara untuk akun yang dibuat saat offline: 'lokal-<uuid>'. */
+function idLokalBaru(): string {
+  const uuid = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
+  return `lokal-${uuid}`
+}
+
+/** True bila perangkat sedang offline. */
+function sedangOffline(): boolean {
+  return typeof navigator !== 'undefined' && !navigator.onLine
+}
 
 // Kandidat akun yang cocok (nama+kelas sama) — untuk pemilih akun anti-kembar
 const kandidat = ref<any[]>([])
@@ -116,17 +132,36 @@ function masukDenganAkun(s: any, n: string, absen: string, kls: string) {
   terapkanSesi(n, absen, kls, s.id, true)
 }
 
-/** Buat akun siswa baru di database. */
+/** Buat akun siswa baru: insert langsung bila online, antrekan bila gagal jaringan. */
 async function buatAkunBaru(n: string, absen: string, kls: string) {
-  const { data, error: err } = await supabase!
-    .from('siswa')
-    .insert({ nama_lengkap: n, no_absen: absen || null, kelas: kls || null })
-    .select('id')
-    .single()
-  if (err) throw err
+  // Generate tempId dulu agar SAMA dipakai sesi bila ternyata harus antre
+  // (mis. koneksi putus tepat saat insert) — remap saat sinkron butuh ini.
+  const tempId = idLokalBaru()
+  const res = await sync.tulisTertunda('siswa', 'insert', {
+    nama_lengkap: n,
+    no_absen: absen || null,
+    kelas: kls || null,
+  }, undefined, tempId)
+  if (!res.ok && !res.queued) throw new Error(res.error || 'Gagal menyimpan')
   tampilPicker.value = false
   loading.value = false
-  terapkanSesi(n, absen, kls, data.id, false)
+  // Bila queued (offline), pakai id lokal sementara; id asli di-remap saat sinkron.
+  terapkanSesi(n, absen, kls, res.id ?? tempId, false)
+}
+
+/** Login offline: akun sementara + insert siswa diantrekan (dedup saat sinkron). */
+function masukOffline(n: string, absen: string, kls: string) {
+  const tempId = idLokalBaru()
+  if (supabase) {
+    sync.antrekan({
+      table: 'siswa',
+      op: 'insert',
+      data: { nama_lengkap: n, no_absen: absen || null, kelas: kls || null },
+      tempId,
+    })
+  }
+  loading.value = false
+  terapkanSesi(n, absen, kls, tempId, false)
 }
 
 async function masuk() {
@@ -152,10 +187,10 @@ async function masuk() {
   tombolTeks.value = 'Mencari datamu...'
   tampilPicker.value = false
 
-  // Mode lokal: langsung buat sesi lokal
-  if (!supabase) {
-    loading.value = false
-    terapkanSesi(n, absen, kls, 'lokal-' + Date.now().toString(36), false)
+  // Mode lokal (Supabase belum dikonfigurasi) atau offline:
+  // pakai akun sementara; insert siswa diantrekan bila ada Supabase.
+  if (!supabase || sedangOffline()) {
+    masukOffline(n, absen, kls)
     return
   }
 
@@ -199,6 +234,12 @@ async function masuk() {
     }
   } catch (e) {
     console.error(e)
+    // Bila pencarian gagal karena jaringan putus di tengah jalan,
+    // fallback ke mode offline (akun sementara + antrean).
+    if (isNetworkError(e)) {
+      masukOffline(n, absen, kls)
+      return
+    }
     error.value = 'Gagal menyimpan ke database. Coba lagi ya!'
     loading.value = false
   }

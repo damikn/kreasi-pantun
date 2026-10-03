@@ -54,6 +54,7 @@ definePageMeta({ layout: 'app', middleware: 'auth' })
 
 const { siswaId, limarFenomena, petaGagasan, petaPesan } = useSession()
 const supabase = useSupabase()
+const sync = useSync()
 
 if (!limarFenomena.value) {
   await navigateTo('/limar/explore-fenomena')
@@ -75,17 +76,16 @@ async function simpan() {
   error.value = ''
   petaGagasan.value = gagasan.value.trim()
   petaPesan.value = pesan.value.trim()
-  if (supabase && !siswaId.value.startsWith('lokal-')) {
-    try {
-      const { error: err } = await supabase.from('peta_ide').insert({
-        siswa_id: siswaId.value,
-        fenomena_id: limarFenomena.value!.id,
-        gagasan: petaGagasan.value,
-        pesan: petaPesan.value
-      })
-      if (err) throw err
-    } catch (e) {
-      console.error(e)
+  if (supabase) {
+    // Offline → diantrekan (tempId siswa di-remap saat sinkronisasi)
+    const res = await sync.tulisTertunda('peta_ide', 'insert', {
+      siswa_id: siswaId.value || null,
+      fenomena_id: limarFenomena.value!.id,
+      gagasan: petaGagasan.value,
+      pesan: petaPesan.value
+    })
+    if (!res.ok && !res.queued) {
+      console.error(res.error)
       error.value = 'Gagal menyimpan ke database, tapi kamu bisa lanjut.'
     }
   }

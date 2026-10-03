@@ -66,6 +66,7 @@ definePageMeta({ layout: 'app', middleware: 'auth' })
 
 const { namaLengkap, siswaId, limarFenomena, petaGagasan, petaPesan, karyaTerakhir } = useSession()
 const supabase = useSupabase()
+const sync = useSync()
 
 const baris = ref<string[]>(['', '', '', ''])
 const menyimpan = ref(false)
@@ -92,7 +93,7 @@ async function simpan() {
   menyimpan.value = true
   error.value = ''
   const payload = {
-    siswa_id: siswaId.value.startsWith('lokal-') ? null : siswaId.value,
+    siswa_id: siswaId.value || null,
     app: '5e',
     fenomena_id: limarFenomena.value?.id ?? null,
     pola_id: null,
@@ -103,13 +104,13 @@ async function simpan() {
     rima_dipilih: [] as string[]
   }
   let id = 'lokal-' + Date.now().toString(36)
-  if (supabase && payload.siswa_id) {
-    try {
-      const { data, error: err } = await supabase.from('karya').insert(payload).select('id').single()
-      if (err) throw err
-      id = data.id
-    } catch (e) {
-      console.error(e)
+  if (supabase) {
+    // Offline → diantrekan (tempId siswa di-remap saat sinkronisasi)
+    const res = await sync.tulisTertunda('karya', 'insert', payload)
+    if (res.ok && res.id) {
+      id = res.id
+    } else if (!res.ok && !res.queued) {
+      console.error(res.error)
       error.value = 'Gagal menyimpan ke database, tapi kamu bisa lanjut.'
     }
   }

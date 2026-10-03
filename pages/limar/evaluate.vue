@@ -96,6 +96,7 @@ definePageMeta({ layout: 'app', middleware: 'auth' })
 const { siswaId, karyaTerakhir } = useSession()
 const supabase = useSupabase()
 const supabaseReady = useSupabaseReady()
+const sync = useSync()
 
 const kriteria = ref(kriteriaEvaluasi.map(teks => ({ teks, cek: false })))
 const skorKriteria = computed(() => kriteria.value.filter(k => k.cek).length)
@@ -115,15 +116,14 @@ async function simpanRefleksi() {
   error.value = ''
   const data: Record<string, string> = {}
   pertanyaanRefleksi.forEach((t, i) => { data[`p${i + 1}`] = jawaban.value[i].trim() })
-  if (supabase && !siswaId.value.startsWith('lokal-')) {
-    try {
-      const { error: err } = await supabase.from('refleksi').insert({
-        siswa_id: siswaId.value,
-        jawaban: data
-      })
-      if (err) throw err
-    } catch (e) {
-      console.error(e)
+  if (supabase) {
+    // Offline → diantrekan (tempId siswa di-remap saat sinkronisasi)
+    const res = await sync.tulisTertunda('refleksi', 'insert', {
+      siswa_id: siswaId.value || null,
+      jawaban: data
+    })
+    if (!res.ok && !res.queued) {
+      console.error(res.error)
       error.value = 'Gagal menyimpan ke database.'
       menyimpan.value = false
       return
@@ -138,12 +138,16 @@ async function muatGaleri() {
   if (!supabase) return
   memuat.value = true
   try {
-    const { data, error: err } = await supabase
-      .from('karya')
-      .select('id, app, baris1, baris2, baris3, baris4, created_at, siswa:siswa_id(nama_lengkap, kelas)')
-      .order('created_at', { ascending: false })
-      .limit(12)
-    if (err) throw err
+    // Cache-first saat offline: tampilkan galeri terakhir yang tersimpan
+    const { data } = await sync.bacaCacheAtauJaringan('galeri', async () => {
+      const { data, error: err } = await supabase
+        .from('karya')
+        .select('id, app, baris1, baris2, baris3, baris4, created_at, siswa:siswa_id(nama_lengkap, kelas)')
+        .order('created_at', { ascending: false })
+        .limit(12)
+      if (err) throw err
+      return data ?? []
+    })
     galeri.value = data ?? []
   } catch (e) {
     console.error(e)

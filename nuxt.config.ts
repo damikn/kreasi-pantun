@@ -5,8 +5,69 @@ export default defineNuxtConfig({
   // Ini memastikan sesi yang tersimpan di localStorage dipulihkan
   // sebelum middleware auth berjalan — refresh tidak lagi me-logout.
   ssr: false,
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: ['@nuxtjs/tailwindcss', '@vite-pwa/nuxt'],
   css: ['~/assets/css/main.css'],
+  // Prerender app shell (/) menjadi index.html statis agar bisa di-precache
+  // service worker — syarat agar aplikasi tetap terbuka saat offline.
+  nitro: {
+    prerender: {
+      routes: ['/'],
+    },
+  },
+  pwa: {
+    // Update service worker otomatis tanpa prompt
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'Kreasi Pantun',
+      short_name: 'Kreasi Pantun',
+      description: 'Aplikasi belajar membuat pantun: Kotak Kreasi dan Kreasi Pantun 5E.',
+      lang: 'id',
+      theme_color: '#10b981',
+      background_color: '#fef3c7',
+      display: 'standalone',
+      scope: '/',
+      start_url: '/',
+      icons: [
+        { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      ],
+    },
+    workbox: {
+      // Pola glob eksplisit: modul @vite-pwa/nuxt me-reset pola default,
+      // jadi sebutkan semua aset app agar masuk precache.
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest,woff,woff2}'],
+      // Navigasi SPA saat offline → fallback ke app shell yang sudah di-precache
+      navigateFallback: '/',
+      navigateFallbackDenylist: [/^\/api\//],
+      runtimeCaching: [
+        {
+          // Navigasi antar halaman: utamakan jaringan, fallback ke cache
+          urlPattern: ({ request }: any) => request.mode === 'navigate',
+          handler: 'NetworkFirst' as const,
+          options: {
+            cacheName: 'navigasi',
+            networkTimeoutSeconds: 5,
+            expiration: { maxEntries: 50, maxAgeSeconds: 24 * 3600 },
+          },
+        },
+        {
+          // API Supabase (GET): utamakan jaringan, fallback ke cache 1 hari
+          urlPattern: ({ url }: any) =>
+            url.hostname.endsWith('.supabase.co') && url.pathname.startsWith('/rest/'),
+          handler: 'NetworkFirst' as const,
+          method: 'GET' as const,
+          options: {
+            cacheName: 'supabase-api',
+            networkTimeoutSeconds: 5,
+            expiration: { maxEntries: 100, maxAgeSeconds: 24 * 3600 },
+            cacheableResponse: { statuses: [0, 200] },
+          },
+        },
+      ],
+    },
+    devOptions: { enabled: false },
+  },
   runtimeConfig: {
     migrateSecret: '',
     dbPassword: '',

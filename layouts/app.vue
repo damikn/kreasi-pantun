@@ -39,6 +39,18 @@
             </Transition>
           </div>
           <SoundToggle />
+          <!-- Status koneksi & sinkronisasi -->
+          <button @click="sinkronManual" :title="judulStatus"
+            class="h-10 px-3 rounded-full flex items-center gap-1.5 text-sm font-display font-extrabold shadow-md transition active:scale-95"
+            :class="sedangSinkron ? 'bg-sky-100 text-sky-700 shadow-sky-200'
+              : !isOnline ? 'bg-orange-100 text-orange-700 shadow-orange-200'
+              : pendingCount > 0 ? 'bg-amber-100 text-amber-700 shadow-amber-200'
+              : 'bg-emerald-100 text-emerald-700 shadow-emerald-200'">
+            <span v-if="sedangSinkron" class="animate-spin inline-block">🔄</span>
+            <span v-else-if="!isOnline">📴</span>
+            <span v-else-if="pendingCount > 0">⏳ {{ pendingCount }}</span>
+            <span v-else>🟢</span>
+          </button>
         </div>
 
         <!-- Kanan: nama sistem -->
@@ -50,6 +62,13 @@
         </NuxtLink>
       </div>
     </header>
+    <!-- Banner mode offline -->
+    <div v-if="!isOnline" class="bg-orange-100 border-b border-orange-200 px-4 py-2 text-center">
+      <p class="text-xs font-bold text-orange-700">
+        📴 Mode offline — datamu tersimpan di perangkat dan akan terkirim otomatis saat online.
+        <span v-if="pendingCount > 0">({{ pendingCount }} menunggu sinkron)</span>
+      </p>
+    </div>
     <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-6 md:py-10">
       <slot />
     </main>
@@ -61,6 +80,20 @@
 
 <script setup lang="ts">
 const { namaLengkap, noAbsen, kelas, guruAuthed, logout, logoutGuru } = useSession()
+const { isOnline, pendingCount, sedangSinkron, sinkronkan } = useSync()
+
+/** Teks tooltip status koneksi. */
+const judulStatus = computed(() => {
+  if (sedangSinkron.value) return 'Menyinkronkan data...'
+  if (!isOnline.value) return 'Offline — klik untuk coba sinkron saat online'
+  if (pendingCount.value > 0) return `${pendingCount.value} data menunggu sinkron — klik untuk sinkronkan sekarang`
+  return 'Online — semua data tersinkron'
+})
+
+/** Sinkron manual saat pill diklik. */
+function sinkronManual() {
+  if (isOnline.value && !sedangSinkron.value) void sinkronkan()
+}
 
 const menuBuka = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
