@@ -1,5 +1,8 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4 py-10">
+  <div class="min-h-screen flex flex-col">
+    <!-- Tawaran install PWA -->
+    <InstallBanner />
+    <div class="flex-1 flex items-center justify-center px-4 py-10">
     <div class="card max-w-md w-full p-8 md:p-10 text-center relative overflow-hidden">
       <div class="absolute -top-8 -left-8 text-[100px] opacity-10 select-none">📦</div>
       <div class="absolute -bottom-8 -right-8 text-[100px] opacity-10 select-none">✨</div>
@@ -65,6 +68,7 @@
       <NuxtLink to="/guru" class="inline-block mt-4 text-sm font-bold text-slate-400 hover:text-emerald-600 transition">
         👩‍🏫 Masuk sebagai Guru
       </NuxtLink>
+    </div>
     </div>
   </div>
 </template>
