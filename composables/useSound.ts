@@ -129,6 +129,14 @@ export function useSound() {
     if (!ready()) return
     blip(240, 0.22, 'sine', 0.07, 0, 920)
   }
+  /** Kotak kreasi dibuka: tutup terangkat + kilau magis + denting. */
+  function openBox() {
+    if (!ready()) return
+    blip(300, 0.35, 'sine', 0.09, 0, 950)
+    const seq = [880, 1046.5, 1318.5, 1568]
+    seq.forEach((f, i) => blip(f, 0.28, 'triangle', 0.1, 0.3 + i * 0.1))
+    blip(2093, 0.6, 'sine', 0.08, 0.3 + seq.length * 0.1)
+  }
 
   // ---------- BGM ----------
   function startBgm() {
@@ -167,6 +175,6 @@ export function useSound() {
   return {
     soundOn,
     click, pop, tick, success, error, win, swoosh,
-    startBgm, stopBgm, unlockAudio, toggleSound,
+    startBgm, stopBgm, unlockAudio, toggleSound, openBox,
   }
 }

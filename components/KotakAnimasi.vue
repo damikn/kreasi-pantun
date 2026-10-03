@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 const emit = defineEmits<{ terbuka: [] }>()
+const sfx = useSound()
 const sedangBuka = ref(false)
 let sudah = false
 
@@ -40,6 +41,7 @@ function buka() {
   if (sudah) return
   sudah = true
   sedangBuka.value = true
+  sfx.openBox()
   setTimeout(() => emit('terbuka'), 1900)
 }
 </script>
