@@ -9,6 +9,7 @@
       </h1>
       <p class="text-slate-500 font-semibold mt-3 mb-6">
         Masukkan kode guru untuk melihat karya dan progres siswa.
+        Kode = tanggal hari ini (DDMMYYYY).
       </p>
 
       <form @submit.prevent="masuk" class="text-left space-y-4">
@@ -34,18 +35,25 @@ const { guruAuthed, save } = useSession()
 const kode = ref('')
 const error = ref('')
 
-// Kode default bila env belum diisi — ganti via NUXT_PUBLIC_GURU_CODE.
-const KODE_DEFAULT = 'kreasi-guru'
+// Kode guru = tanggal hari ini (DDMMYYYY), ganti otomatis tiap hari.
+// Contoh: 3 Okt 2026 -> "03102026". Dihitung dari tanggal di perangkat.
+// Env NUXT_PUBLIC_GURU_CODE (bila diisi) tetap diterima sebagai kode cadangan.
+function kodeHariIni() {
+  const d = new Date()
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${dd}${mm}${d.getFullYear()}`
+}
 
 function masuk() {
   const config = useRuntimeConfig()
-  const benar = (config.public.guruCode as string) || KODE_DEFAULT
-  if (kode.value.trim() === benar && kode.value.trim() !== '') {
+  const diterima = [kodeHariIni(), (config.public.guruCode as string) || ''].filter(Boolean)
+  if (diterima.includes(kode.value.trim())) {
     guruAuthed.value = true
     save()
     navigateTo('/guru/dashboard')
   } else {
-    error.value = 'Kode salah. Tanya kode yang benar ke admin ya!'
+    error.value = 'Kode salah. Kode guru adalah tanggal hari ini (contoh: 03102026).'
   }
 }
 </script>
