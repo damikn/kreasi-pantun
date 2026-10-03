@@ -62,6 +62,8 @@
         </NuxtLink>
       </div>
     </header>
+    <!-- Banner tawaran install PWA (sembunyi bila sudah terinstall) -->
+    <InstallBanner />
     <!-- Banner mode offline -->
     <div v-if="!isOnline" class="bg-orange-100 border-b border-orange-200 px-4 py-2 text-center">
       <p class="text-xs font-bold text-orange-700">
