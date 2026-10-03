@@ -9,13 +9,12 @@
   </div>
 
   <div class="grid lg:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">
-    <!-- Peta ide -->
+    <!-- Fenomena & pesan terpilih -->
     <div class="card p-5 bg-amber-50/70">
-      <p class="font-display font-bold text-slate-700 mb-2">🗺️ Peta Idemu</p>
+      <p class="font-display font-bold text-slate-700 mb-2">🌟 Fenomena Pilihanmu</p>
       <p class="text-sm font-semibold text-slate-600"><b class="text-amber-700">Fenomena:</b> {{ limarFenomena?.nama ?? '—' }}</p>
-      <p class="text-sm font-semibold text-slate-600 mt-1"><b class="text-amber-700">Gagasan:</b> {{ petaGagasan || '—' }}</p>
       <p class="text-sm font-semibold text-slate-600 mt-1"><b class="text-amber-700">Pesan:</b> {{ petaPesan || '—' }}</p>
-      <NuxtLink to="/limar/explore-peta" class="btn-soft !px-4 !py-1.5 text-xs mt-3">✏️ Ubah Peta Ide</NuxtLink>
+      <NuxtLink to="/limar/explore-peta" class="btn-soft !px-4 !py-1.5 text-xs mt-3">✏️ Ubah</NuxtLink>
     </div>
 
     <!-- Form -->
@@ -40,15 +39,20 @@
       <p v-if="tersimpan" class="text-emerald-600 font-bold text-sm mt-2 text-center">🎉 Pantunmu tersimpan! Lanjut ke Evaluate ya!</p>
     </div>
 
-    <!-- Bantuan rima -->
+    <!-- Bantuan rima: pohon rima per akhiran, atau ketik rima sendiri di kolom pantun -->
     <div class="card p-5">
-      <p class="font-display font-bold text-slate-700 mb-2">🌳 Bantuan Rima</p>
-      <p class="text-xs font-semibold text-slate-500 mb-3">Klik kata untuk menyalinnya ke baris terakhir yang kosong.</p>
-      <div class="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto">
-        <button v-for="k in kataRima" :key="k.kata" @click="pakaiKata(k.kata)"
-          class="pill bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
-          {{ k.kata }} <span class="opacity-50">{{ k.akhiran }}</span>
-        </button>
+      <p class="font-display font-bold text-slate-700 mb-2">🌳 Pohon Rima</p>
+      <p class="text-xs font-semibold text-slate-500 mb-3">Pilih rima dari pohon ini, atau ketik rima buatanmu sendiri langsung di kolom pantun. Klik kata untuk menyalinnya ke baris terakhir yang kosong.</p>
+      <div class="space-y-3 max-h-64 overflow-y-auto">
+        <div v-for="(words, akhiran) in rimaByAkhiran" :key="akhiran">
+          <p class="text-xs font-bold text-emerald-700 mb-1.5">🍃 Rima {{ akhiran }}</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button v-for="k in words" :key="k.kata" @click="pakaiKata(k.kata)"
+              class="pill bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
+              {{ k.kata }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -64,7 +68,7 @@ import { kataRima } from '~/data/konten'
 
 definePageMeta({ layout: 'app', middleware: 'auth' })
 
-const { namaLengkap, siswaId, limarFenomena, petaGagasan, petaPesan, karyaTerakhir } = useSession()
+const { namaLengkap, siswaId, limarFenomena, petaPesan, karyaTerakhir } = useSession()
 const supabase = useSupabase()
 const sync = useSync()
 
@@ -74,6 +78,15 @@ const tersimpan = ref(false)
 const error = ref('')
 
 const bisaSimpan = computed(() => baris.value.every(b => b.trim()))
+
+/** Kata rima dikelompokkan per akhiran menjadi "pohon rima". */
+const rimaByAkhiran = computed(() => {
+  const groups: Record<string, typeof kataRima> = {}
+  for (const k of kataRima) {
+    ;(groups[k.akhiran] ||= []).push(k)
+  }
+  return groups
+})
 
 function pakaiKata(kata: string) {
   // tempel ke baris kosong terakhir, atau baris 4 bila semua terisi

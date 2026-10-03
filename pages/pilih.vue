@@ -5,7 +5,7 @@
     </div>
     <h1 class="page-title">Halo, {{ namaLengkap }}! 👋</h1>
     <p v-if="kelas || noAbsen" class="page-sub">
-      {{ [kelas ? `Kelas ${kelas}` : '', noAbsen ? `No. Absen ${noAbsen}` : ''].filter(Boolean).join(' • ') }}
+      {{ [kelas ? `Kelas ${kelas}` : '', noAbsen ? `No. ${noAbsen}` : ''].filter(Boolean).join(' • ') }}
     </p>
     <p class="page-sub">Pilih aplikasimu dan mulai berkreasi dengan pantun!</p>
   </div>

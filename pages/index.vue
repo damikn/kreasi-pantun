@@ -49,7 +49,7 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-bold text-slate-700 mb-1.5">No. Absen</label>
+            <label class="block font-bold text-slate-700 mb-1.5">No.</label>
             <input v-model="absenInput" class="input-cute" placeholder="Contoh: 7" maxlength="10" inputmode="numeric" autocomplete="off" />
           </div>
           <div>
