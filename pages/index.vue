@@ -1,5 +1,14 @@
 <template>
-  <div class="min-h-screen flex flex-col">
+  <!-- Animasi kotak kreasi setelah login berhasil -->
+  <div v-if="kotakTampil" class="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-amber-50 to-orange-100">
+    <h2 class="font-display text-2xl font-extrabold text-slate-700 mb-2 text-center">
+      Selamat datang, {{ namaLengkap }}! 🎉
+    </h2>
+    <p class="text-slate-500 font-semibold mb-6 text-center">Kotak kreasimu sudah siap. Buka yuk!</p>
+    <KotakAnimasi @terbuka="lanjutKePilih" />
+  </div>
+
+  <div v-else class="min-h-screen flex flex-col">
     <!-- Tawaran install PWA -->
     <InstallBanner />
     <div class="flex-1 flex items-center justify-center px-4 py-10">
@@ -108,13 +117,15 @@ function sedangOffline(): boolean {
 // Kandidat akun yang cocok (nama+kelas sama) — untuk pemilih akun anti-kembar
 const kandidat = ref<any[]>([])
 const tampilPicker = ref(false)
+// Tampilkan animasi kotak kreasi setelah login berhasil (sebelum ke /pilih)
+const kotakTampil = ref(false)
 
 function formatTanggal(s: string) {
   if (!s) return '—'
   return new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-/** Terapkan sesi lalu masuk ke menu utama. */
+/** Terapkan sesi lalu tampilkan animasi kotak (lanjut ke /pilih setelah kotak terbuka). */
 function terapkanSesi(nama: string, absen: string, kls: string, id: string, kembali: boolean) {
   // Mode saling eksklusif: login siswa mematikan mode guru (perangkat bersama)
   guruAuthed.value = false
@@ -126,6 +137,11 @@ function terapkanSesi(nama: string, absen: string, kls: string, id: string, kemb
   save()
   if (kembali) sfx.success()
   else sfx.pop()
+  kotakTampil.value = true
+}
+
+/** Dipanggil setelah animasi kotak selesai → masuk ke menu utama. */
+function lanjutKePilih() {
   navigateTo('/pilih')
 }
 
