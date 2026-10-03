@@ -35,6 +35,9 @@ body {
   .pill {
     @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold;
   }
+  .menu-item {
+    @apply flex items-center gap-2.5 w-full text-left px-3 py-2.5 rounded-xl font-bold text-sm text-slate-700 hover:bg-amber-50 active:bg-amber-100 transition cursor-pointer;
+  }
   .page-title {
     @apply font-display text-3xl md:text-4xl font-extrabold text-slate-800;
   }
