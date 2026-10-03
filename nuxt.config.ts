@@ -4,6 +4,9 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
+    // Private (server only) — hanya dipakai endpoint migrasi sementara
+    migrateSecret: '',
+    dbPassword: '',
     public: {
       // Diisi lewat environment variable (jangan hardcode secret di kode):
       // NUXT_PUBLIC_SUPABASE_URL dan NUXT_PUBLIC_SUPABASE_ANON_KEY
