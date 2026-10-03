@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply font-body text-slate-800;
+  background: linear-gradient(160deg, #fef9ef 0%, #fdf3e3 40%, #eef7f0 100%);
+  min-height: 100vh;
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.07)] border border-amber-100;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-display font-bold rounded-full px-6 py-3 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn text-white shadow-lg shadow-emerald-200;
+    background: linear-gradient(135deg, #34d399, #10b981);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.05);
+  }
+  .btn-warm {
+    @apply btn text-white shadow-lg shadow-amber-200;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  }
+  .btn-soft {
+    @apply btn bg-amber-50 text-amber-800 border-2 border-amber-200;
+  }
+  .input-cute {
+    @apply w-full rounded-2xl border-2 border-amber-200 bg-amber-50/60 px-4 py-3 font-semibold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-emerald-400 focus:bg-white transition;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold;
+  }
+  .page-title {
+    @apply font-display text-3xl md:text-4xl font-extrabold text-slate-800;
+  }
+  .page-sub {
+    @apply text-slate-500 font-semibold mt-1;
+  }
+}

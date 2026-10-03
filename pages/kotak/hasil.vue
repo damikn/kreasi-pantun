@@ -1,0 +1,152 @@
+<template>
+  <div class="text-center mb-6">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 mb-3">
+      <span class="text-5xl">✅</span>
+    </div>
+    <h1 class="page-title">Pantunmu Berhasil Disimpan!</h1>
+    <p class="page-sub">Karyamu tersimpan{{ supabaseReady ? ' di database' : ' di perangkat ini' }}. Unduh sebagai gambar untuk dibagikan! 🎉</p>
+  </div>
+
+  <div class="max-w-xl mx-auto">
+    <!-- Kartu karya -->
+    <div ref="kartuRef" class="rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-200"
+      style="background: linear-gradient(160deg,#fffbeb 0%,#ecfdf5 60%,#eff6ff 100%)">
+      <div class="px-8 pt-8 pb-6 text-center relative">
+        <div class="absolute top-4 left-6 text-4xl opacity-30">🌿</div>
+        <div class="absolute top-4 right-6 text-4xl opacity-30">🌸</div>
+        <p class="pill bg-amber-200 text-amber-800 mb-3">📦 KOTAK KREASI</p>
+        <h2 class="font-display text-3xl font-extrabold text-slate-800 mb-4">Pantun Karyaku</h2>
+        <div class="bg-white/70 rounded-2xl px-6 py-5 inline-block">
+          <p v-for="(b, i) in karya?.baris" :key="i"
+            class="font-display text-xl font-semibold text-slate-700 italic leading-relaxed">{{ b }}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-6 text-left text-sm">
+          <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">NAMA</p><p class="font-bold text-slate-700">{{ karya?.nama }}</p></div>
+          <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">TANGGAL</p><p class="font-bold text-slate-700">{{ tanggal }}</p></div>
+          <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">FENOMENA</p><p class="font-bold text-slate-700">{{ karya?.fenomenaIcon }} {{ karya?.fenomena }}</p></div>
+          <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">POLA</p><p class="font-bold text-slate-700">{{ karya?.pola }}</p></div>
+        </div>
+        <p class="text-xs font-bold text-slate-400 mt-4">Kata rima: {{ karya?.rima?.join(', ') }}</p>
+        <p class="font-display font-bold text-amber-600 mt-4 italic">"Setiap kata adalah langkah kecil menuju perubahan besar. Teruslah berkarya!"</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap justify-center gap-3 mt-6">
+      <button class="btn-primary" @click="unduhGambar" :disabled="mengunduh">
+        {{ mengunduh ? 'Membuat gambar...' : '⬇️ Unduh sebagai Gambar' }}
+      </button>
+      <NuxtLink to="/kotak/fenomena" class="btn-warm" @click="buatLagi">🎨 Buat Lagi</NuxtLink>
+      <NuxtLink to="/pilih" class="btn-soft">🏠 Menu Utama</NuxtLink>
+    </div>
+  </div>
+
+  <canvas ref="canvasRef" width="1080" height="1350" class="hidden"></canvas>
+</template>
+
+<script setup lang="ts">
+definePageMeta({ layout: 'app', middleware: 'auth' })
+
+const { karyaTerakhir, resetKotak } = useSession()
+const supabaseReady = useSupabaseReady()
+const karya = computed(() => karyaTerakhir.value)
+
+if (!karya.value) {
+  await navigateTo('/kotak/fenomena')
+}
+
+const tanggal = computed(() => {
+  const d = karya.value?.tanggal ? new Date(karya.value.tanggal) : new Date()
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+})
+
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const mengunduh = ref(false)
+
+function buatLagi() {
+  resetKotak()
+}
+
+/** Render kartu karya ke canvas lalu unduh sebagai PNG (tanpa library tambahan). */
+function unduhGambar() {
+  const canvas = canvasRef.value
+  if (!canvas || !karya.value) return
+  mengunduh.value = true
+  const ctx = canvas.getContext('2d')!
+  const W = 1080, H = 1350
+
+  // Latar
+  const g = ctx.createLinearGradient(0, 0, 0, H)
+  g.addColorStop(0, '#fffbeb'); g.addColorStop(0.6, '#ecfdf5'); g.addColorStop(1, '#eff6ff')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, W, H)
+
+  // Hiasan lingkaran
+  const deco = (x: number, y: number, r: number, c: string) => {
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
+  }
+  deco(120, 180, 90, 'rgba(52,211,153,.15)')
+  deco(960, 240, 120, 'rgba(251,191,36,.18)')
+  deco(940, 1150, 100, 'rgba(56,189,248,.15)')
+  deco(140, 1180, 70, 'rgba(167,139,250,.15)')
+
+  ctx.textAlign = 'center'
+  ctx.fillStyle = '#b45309'
+  ctx.font = 'bold 34px sans-serif'
+  ctx.fillText('📦 KOTAK KREASI', W / 2, 120)
+
+  ctx.fillStyle = '#1e293b'
+  ctx.font = '800 64px sans-serif'
+  ctx.fillText('Pantun Karyaku', W / 2, 210)
+
+  // Kotak pantun
+  ctx.fillStyle = 'rgba(255,255,255,.75)'
+  const boxY = 260, boxH = 340
+  roundRect(ctx, 90, boxY, W - 180, boxH, 36); ctx.fill()
+  ctx.fillStyle = '#334155'
+  ctx.font = 'italic 600 44px sans-serif'
+  karya.value.baris.forEach((b: string, i: number) => {
+    ctx.fillText(b, W / 2, boxY + 85 + i * 75, W - 260)
+  })
+
+  // Info
+  ctx.textAlign = 'left'
+  const info: [string, string][] = [
+    ['NAMA', karya.value.nama],
+    ['TANGGAL', tanggal.value],
+    ['FENOMENA', karya.value.fenomena],
+    ['POLA', karya.value.pola]
+  ]
+  info.forEach(([label, val], i) => {
+    const y = 700 + i * 110
+    ctx.fillStyle = 'rgba(255,255,255,.65)'
+    roundRect(ctx, 90, y, W - 180, 92, 24); ctx.fill()
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 24px sans-serif'
+    ctx.fillText(label, 130, y + 36)
+    ctx.fillStyle = '#334155'; ctx.font = 'bold 32px sans-serif'
+    ctx.fillText(String(val).slice(0, 42), 130, y + 72, W - 300)
+  })
+
+  ctx.textAlign = 'center'
+  ctx.fillStyle = '#94a3b8'; ctx.font = '600 28px sans-serif'
+  ctx.fillText('Kata rima: ' + (karya.value.rima || []).join(', '), W / 2, 1170, W - 200)
+  ctx.fillStyle = '#d97706'; ctx.font = 'italic bold 30px sans-serif'
+  ctx.fillText('"Setiap kata adalah langkah kecil menuju perubahan besar."', W / 2, 1230, W - 160)
+  ctx.fillText('Teruslah berkarya! ✨', W / 2, 1275)
+
+  const a = document.createElement('a')
+  a.download = `pantun-${karya.value.nama.replace(/\s+/g, '-').toLowerCase()}.png`
+  a.href = canvas.toDataURL('image/png')
+  a.click()
+  mengunduh.value = false
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+</script>
