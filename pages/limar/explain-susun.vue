@@ -98,11 +98,14 @@ function pindahKeKiri(i: number) {
   hasil.value = null
 }
 
+const sfx = useSound()
+
 function periksa() {
   const ok = urutan.value.every((b, i) => b === benar[i])
   hasil.value = ok
     ? { benar: true, pesan: '🎉 Hebat! Susunan pantunmu benar!' }
     : { benar: false, pesan: '💪 Belum tepat. Ingat: 2 baris pertama sampiran, 2 baris terakhir isi!' }
+  ok ? sfx.success() : sfx.error()
 }
 
 function ulangi() {

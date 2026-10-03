@@ -69,6 +69,8 @@ function toggle(k: string) {
   hasil.value = null
 }
 
+const sfx = useSound()
+
 function periksa() {
   const ok = dipilih.value.length === benarList.length &&
     benarList.every(k => dipilih.value.includes(k))
@@ -76,6 +78,7 @@ function periksa() {
   hasil.value = ok
     ? { benar: true, pesan: '🎉 Hebat! Kamu menemukan semua kata berima!' }
     : { benar: false, pesan: `💪 ${benarCount} kata tepat. Cari yang berakhiran "-ati"!` }
+  ok ? sfx.success() : sfx.error()
 }
 
 function ulangi() {

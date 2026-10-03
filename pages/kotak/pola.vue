@@ -70,6 +70,7 @@ import { daftarPola, type Pola } from '~/data/konten'
 definePageMeta({ layout: 'app', middleware: 'auth' })
 
 const { kotakFenomena, kotakPola } = useSession()
+const sfx = useSound()
 
 // 8 segmen roda (nomor pola), seperti pada mockup
 const segments = [1, 2, 3, 4, 5, 3, 2, 4]
@@ -95,9 +96,13 @@ function spin() {
   const current = ((rotation.value % 360) + 360) % 360
   const delta = (target - current + 360) % 360
   rotation.value += 360 * 5 + delta
+  // Bunyi tick berulang selama roda berputar
+  const tickTimer = setInterval(() => sfx.tick(), 140)
   setTimeout(() => {
+    clearInterval(tickTimer)
     berputar.value = false
     hasilPola.value = daftarPola.find(p => p.nomor === segments[idx]) ?? null
+    sfx.win()
   }, 4200)
 }
 

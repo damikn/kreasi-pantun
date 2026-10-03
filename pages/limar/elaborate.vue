@@ -85,6 +85,8 @@ function pakaiKata(kata: string) {
   baris.value[3] = baris.value[3] + ' ' + kata
 }
 
+const sfx = useSound()
+
 async function simpan() {
   if (!bisaSimpan.value) return
   menyimpan.value = true
@@ -124,5 +126,6 @@ async function simpan() {
   }
   menyimpan.value = false
   tersimpan.value = true
+  sfx.success()
 }
 </script>

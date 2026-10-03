@@ -67,6 +67,8 @@ const error = ref('')
 
 const bisaSimpan = computed(() => gagasan.value.trim() && pesan.value.trim())
 
+const sfx = useSound()
+
 async function simpan() {
   if (!bisaSimpan.value) return
   menyimpan.value = true
@@ -89,6 +91,7 @@ async function simpan() {
   }
   menyimpan.value = false
   tersimpan.value = true
+  sfx.success()
 }
 
 async function lanjut() {

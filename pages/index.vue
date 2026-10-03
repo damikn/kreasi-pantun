@@ -58,6 +58,8 @@ const kelasInput = ref('')
 const error = ref('')
 const loading = ref(false)
 
+const sfx = useSound()
+
 async function masuk() {
   const n = namaInput.value.trim()
   if (!n) {
@@ -91,6 +93,7 @@ async function masuk() {
   noAbsen.value = absen
   kelas.value = kls
   siswaId.value = id
+  sfx.success()
   await navigateTo('/pilih')
 }
 </script>

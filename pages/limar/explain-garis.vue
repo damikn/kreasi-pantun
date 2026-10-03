@@ -69,11 +69,14 @@ function setJawaban(i: number, v: string) {
   hasil.value = null
 }
 
+const sfx = useSound()
+
 function periksa() {
   const benarCount = jawaban.value.filter((j, i) => j === kunci[i]).length
   hasil.value = benarCount === 4
     ? { benar: true, pesan: '🎉 Sempurna! Kamu paham sampiran dan isi!' }
     : { benar: false, pesan: `💪 ${benarCount} dari 4 benar. Coba perhatikan lagi!` }
+  hasil.value.benar ? sfx.success() : sfx.error()
 }
 
 function ulangi() {

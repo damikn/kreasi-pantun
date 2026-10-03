@@ -107,6 +107,8 @@ function pesanBenar(fenId: string) {
 
 const semuaBenar = computed(() => skor.value === 4)
 
+const sfx = useSound()
+
 function periksa() {
   let s = 0
   for (const fen of game.fenomena) {
@@ -117,6 +119,7 @@ function periksa() {
   }
   skor.value = s
   sudahPeriksa.value = true
+  semuaBenar.value ? sfx.success() : sfx.error()
 }
 
 function ulangi() {

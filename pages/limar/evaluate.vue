@@ -108,6 +108,8 @@ const error = ref('')
 const galeri = ref<any[]>([])
 const memuat = ref(false)
 
+const sfx = useSound()
+
 async function simpanRefleksi() {
   menyimpan.value = true
   error.value = ''
@@ -129,6 +131,7 @@ async function simpanRefleksi() {
   }
   menyimpan.value = false
   tersimpan.value = true
+  sfx.success()
 }
 
 async function muatGaleri() {

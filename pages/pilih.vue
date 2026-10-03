@@ -8,7 +8,7 @@
   </div>
 
   <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-    <NuxtLink to="/kotak/fenomena"
+    <NuxtLink to="/kotak/fenomena" data-no-sound @click="sfx.swoosh()"
       class="card p-8 text-center hover:scale-[1.02] hover:shadow-xl transition group">
       <div class="text-7xl mb-4 group-hover:animate-bounce">📦</div>
       <h2 class="font-display text-2xl font-extrabold text-amber-600">KOTAK KREASI</h2>
@@ -24,7 +24,7 @@
       <span class="btn-warm mt-6">Mulai Berkreasi →</span>
     </NuxtLink>
 
-    <NuxtLink to="/limar/engage-1"
+    <NuxtLink to="/limar/engage-1" data-no-sound @click="sfx.swoosh()"
       class="card p-8 text-center hover:scale-[1.02] hover:shadow-xl transition group">
       <div class="text-7xl mb-4 group-hover:animate-bounce">🌟</div>
       <h2 class="font-display text-2xl font-extrabold text-emerald-600">Kreasi Pantun 5E</h2>
@@ -46,5 +46,6 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'app', middleware: 'auth' })
 const { namaLengkap, noAbsen, kelas, resetKotak } = useSession()
+const sfx = useSound()
 resetKotak()
 </script>

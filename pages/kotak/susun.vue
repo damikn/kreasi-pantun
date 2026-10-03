@@ -90,6 +90,8 @@ const checklist = ref([
 const terisi = computed(() => baris.value.filter(b => b.trim()).length)
 const bisaSimpan = computed(() => terisi.value === 4 && checklist.value.every(c => c.cek))
 
+const sfx = useSound()
+
 async function simpan() {
   if (!bisaSimpan.value) return
   menyimpan.value = true
@@ -127,6 +129,7 @@ async function simpan() {
     baris: baris.value.map(b => b.trim()),
     tanggal: new Date()
   }
+  sfx.success()
   await navigateTo('/kotak/hasil')
 }
 </script>

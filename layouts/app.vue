@@ -12,6 +12,7 @@
           <span v-if="namaLengkap" class="pill bg-emerald-100 text-emerald-700">👋 {{ namaLengkap }}</span>
           <span v-if="kelas" class="pill bg-sky-100 text-sky-700 hidden sm:inline-flex">🏫 {{ kelas }}</span>
           <NuxtLink to="/pilih" class="btn-soft !px-4 !py-2 text-sm">🏠 Menu</NuxtLink>
+          <SoundToggle />
         </div>
       </div>
     </header>

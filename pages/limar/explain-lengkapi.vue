@@ -90,11 +90,14 @@ function pilihKata(k: string) {
   hasil.value = null
 }
 
+const sfx = useSound()
+
 function periksa() {
   const ok = jawaban.value.every((j, i) => j === kunci[i])
   hasil.value = ok
     ? { benar: true, pesan: '🎉 Tepat sekali! Rima dan maknanya pas!' }
     : { benar: false, pesan: '💪 Belum tepat. Perhatikan rima akhir barisnya!' }
+  ok ? sfx.success() : sfx.error()
 }
 
 function ulangi() {

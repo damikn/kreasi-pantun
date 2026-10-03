@@ -164,11 +164,14 @@ function kataBenar(w: TtsWord) {
   return true
 }
 
+const sfx = useSound()
+
 function periksa() {
   const benar = ttsWords.filter(kataBenar).length
   hasil.value = benar === ttsWords.length
     ? { benar: true, pesan: `🎉 Sempurna! Semua ${ttsWords.length} kata benar!` }
     : { benar: false, pesan: `💪 ${benar} dari ${ttsWords.length} kata benar. Coba lagi!` }
+  hasil.value.benar ? sfx.success() : sfx.error()
 }
 
 function ulangi() {
