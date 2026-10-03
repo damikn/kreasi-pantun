@@ -36,7 +36,7 @@
             <span class="pill" :class="k.app === 'kotak' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
               {{ k.app === 'kotak' ? '📦 Kotak Kreasi' : '🌟 5E' }}
             </span>
-            <span v-if="k.skor !== null && k.skor !== undefined" class="pill bg-sky-100 text-sky-700">⭐ Skor {{ k.skor }}</span>
+            <span v-if="adaSkor && k.skor !== null && k.skor !== undefined" class="pill bg-sky-100 text-sky-700">⭐ Skor {{ k.skor }}</span>
             <span v-if="namaFenomena(k.fenomena_id)" class="pill bg-violet-100 text-violet-700">{{ namaFenomena(k.fenomena_id) }}</span>
             <span class="pill bg-slate-100 text-slate-500">{{ formatTanggal(k.created_at) }}</span>
           </div>
@@ -60,6 +60,8 @@ const supabaseReady = useSupabaseReady()
 const daftar = ref<any[]>([])
 const fenomenaMap = ref<Record<number, string>>({})
 const memuat = ref(false)
+// false bila kolom `skor` belum ada di database → badge skor disembunyikan
+const adaSkor = ref(true)
 
 function judulKartu(k: any) {
   const app = k.app === 'kotak' ? 'KOTAK KREASI' : 'KREASI 5E'
@@ -79,21 +81,24 @@ async function muat() {
   if (!supabase || !siswaId.value || siswaId.value.startsWith('lokal-')) return
   memuat.value = true
   try {
-    const [rk, rf] = await Promise.all([
-      supabase.from('karya')
-        .select('id, app, fenomena_id, pola_id, baris1, baris2, baris3, baris4, skor, created_at')
+    const { data, adaSkor: ok } = await fetchKaryaList(
+      'id, app, fenomena_id, pola_id, baris1, baris2, baris3, baris4, skor, created_at',
+      'id, app, fenomena_id, pola_id, baris1, baris2, baris3, baris4, created_at',
+      (fields) => supabase.from('karya')
+        .select(fields)
         .eq('siswa_id', siswaId.value)
         .order('created_at', { ascending: false }),
-      supabase.from('fenomena').select('id, nama'),
-    ])
-    if (rk.error) throw rk.error
-    daftar.value = rk.data ?? []
+    )
+    daftar.value = data
+    adaSkor.value = ok
+  } catch (e) { console.error('[karyaku]:', e) }
+  try {
+    const rf = await supabase.from('fenomena').select('id, nama')
+    if (rf.error) throw rf.error
     const m: Record<number, string> = {}
     for (const f of (rf.data ?? [])) m[f.id] = f.nama
     fenomenaMap.value = m
-  } catch (e) {
-    console.error(e)
-  }
+  } catch (e) { console.error('[karyaku] fenomena:', e) }
   memuat.value = false
 }
 

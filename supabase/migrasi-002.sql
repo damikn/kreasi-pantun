@@ -16,3 +16,8 @@ create index if not exists idx_siswa_nama
 -- Percepat filter karya per kelas di dashboard guru
 create index if not exists idx_karya_app
   on public.karya (app);
+
+-- Kolom skor (dipakai dashboard guru & halaman Karyaku).
+-- Idempoten: aman dijalankan walau kolom sudah ada.
+alter table public.karya
+  add column if not exists skor integer;

@@ -73,7 +73,7 @@ Tanpa Supabase pun aplikasi tetap jalan (mode lokal, data tersimpan di memori se
 2. SQL Editor → jalankan `supabase/schema.sql`, lalu `supabase/seed.sql`.
 3. Salin **Project URL** dan **anon public key** ke `.env` (atau ke Environment Variables di Vercel).
 4. (Untuk database yang sudah berjalan) jalankan juga `supabase/migrasi-002.sql`
-   untuk menambah index — aman, tidak mengubah data.
+   untuk menambah index + kolom `skor` — aman, tidak mengubah data.
 
 ## Deploy ke Vercel
 

@@ -84,7 +84,7 @@
               <th class="pb-2 pr-3 font-bold">KELAS</th>
               <th class="pb-2 pr-3 font-bold">APP</th>
               <th class="pb-2 pr-3 font-bold">FENOMENA</th>
-              <th class="pb-2 pr-3 font-bold">SKOR</th>
+              <th v-if="adaSkor" class="pb-2 pr-3 font-bold">SKOR</th>
               <th class="pb-2 font-bold">TANGGAL</th>
             </tr>
           </thead>
@@ -98,7 +98,7 @@
                 </span>
               </td>
               <td class="py-2.5 pr-3 font-semibold text-slate-500">{{ fenomenaMap[k.fenomena_id] ?? '—' }}</td>
-              <td class="py-2.5 pr-3 font-extrabold" :class="skorClass(k.skor)">{{ k.skor ?? '—' }}</td>
+              <td v-if="adaSkor" class="py-2.5 pr-3 font-extrabold" :class="skorClass(k.skor)">{{ k.skor ?? '—' }}</td>
               <td class="py-2.5 font-semibold text-slate-500 whitespace-nowrap">{{ formatTanggal(k.created_at) }}</td>
             </tr>
           </tbody>
@@ -149,6 +149,8 @@ const daftarSiswa = ref<any[]>([])
 const daftarKarya = ref<any[]>([])
 const fenomenaMap = ref<Record<number, string>>({})
 const jmlRefleksi = ref(0)
+// false bila kolom `skor` belum ada di database → kolom skor disembunyikan
+const adaSkor = ref(true)
 
 const filterKelas = ref('')
 const filterApp = ref('')
@@ -209,27 +211,44 @@ function formatTanggal(s: string) {
 async function muatSemua() {
   if (!supabase) return
   memuat.value = true
+  // Tiap query ditangani terpisah: satu kegagalan tidak boleh mengosongkan semuanya.
   try {
-    const [rs, rk, rf, rr] = await Promise.all([
-      supabase.from('siswa').select('id, nama_lengkap, no_absen, kelas, created_at').order('kelas').order('nama_lengkap'),
-      supabase.from('karya')
-        .select('id, siswa_id, app, fenomena_id, pola_id, skor, created_at, siswa:siswa_id(nama_lengkap, kelas)')
+    const rs = await supabase
+      .from('siswa')
+      .select('id, nama_lengkap, no_absen, kelas, created_at')
+      .order('kelas')
+      .order('nama_lengkap')
+    if (rs.error) throw rs.error
+    daftarSiswa.value = rs.data ?? []
+  } catch (e) { console.error('[dashboard] siswa:', e) }
+
+  try {
+    const { data, adaSkor: ok } = await fetchKaryaList(
+      'id, siswa_id, app, fenomena_id, pola_id, skor, created_at, siswa:siswa_id(nama_lengkap, kelas)',
+      'id, siswa_id, app, fenomena_id, pola_id, created_at, siswa:siswa_id(nama_lengkap, kelas)',
+      (fields) => supabase.from('karya')
+        .select(fields)
         .order('created_at', { ascending: false })
         .limit(500),
-      supabase.from('fenomena').select('id, nama'),
-      supabase.from('refleksi').select('id', { count: 'exact', head: true }),
-    ])
-    if (rs.error) throw rs.error
-    if (rk.error) throw rk.error
-    daftarSiswa.value = rs.data ?? []
-    daftarKarya.value = rk.data ?? []
+    )
+    daftarKarya.value = data
+    adaSkor.value = ok
+  } catch (e) { console.error('[dashboard] karya:', e) }
+
+  try {
+    const rf = await supabase.from('fenomena').select('id, nama')
+    if (rf.error) throw rf.error
     const m: Record<number, string> = {}
     for (const f of (rf.data ?? [])) m[f.id] = f.nama
     fenomenaMap.value = m
+  } catch (e) { console.error('[dashboard] fenomena:', e) }
+
+  try {
+    const rr = await supabase.from('refleksi').select('id', { count: 'exact', head: true })
+    if (rr.error) throw rr.error
     jmlRefleksi.value = rr.count ?? 0
-  } catch (e) {
-    console.error(e)
-  }
+  } catch (e) { console.error('[dashboard] refleksi:', e) }
+
   memuat.value = false
 }
 
