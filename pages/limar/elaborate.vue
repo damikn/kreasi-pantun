@@ -61,10 +61,61 @@
     <NuxtLink to="/limar/explain" class="btn-soft">← Explain</NuxtLink>
     <NuxtLink to="/limar/evaluate" class="btn-primary text-lg">Lanjut ke Evaluate →</NuxtLink>
   </div>
+
+  <!-- Referensi rima opsional (dari /kotak/rima): tersembunyi, muncul saat diklik -->
+  <div class="card p-5 mt-6 max-w-5xl mx-auto">
+    <button @click="tampilRima = !tampilRima"
+      class="w-full flex items-center justify-between text-left">
+      <span class="font-display font-bold text-slate-700">🌳 Referensi Pilihan Rima <span class="text-xs font-semibold text-slate-400">(opsional)</span></span>
+      <span class="text-xl">{{ tampilRima ? '▲' : '▼' }}</span>
+    </button>
+    <p v-if="!tampilRima" class="text-xs font-semibold text-slate-500 mt-1">
+      Klik untuk melihat pilihan rima A (baris 1 &amp; 3) dan rima B (baris 2 &amp; 4) sebagai referensi menyusun pantunmu.
+    </p>
+
+    <div v-if="tampilRima" class="mt-4 grid md:grid-cols-2 gap-4">
+      <div v-for="panel in rimaPanels" :key="panel.key"
+        class="border-2 rounded-2xl p-4" :class="panel.key === 'A' ? 'border-sky-200 bg-sky-50/50' : 'border-emerald-200 bg-emerald-50/50'">
+        <p class="font-display font-bold mb-1" :class="panel.key === 'A' ? 'text-sky-700' : 'text-emerald-700'">
+          {{ panel.title }}
+        </p>
+        <p class="text-xs font-semibold text-slate-500 mb-3">Pilih akhiran, lalu klik kata untuk menyalinnya ke pantunmu.</p>
+
+        <p class="text-xs font-bold text-slate-500 mb-2">Akhiran:</p>
+        <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1 mb-3">
+          <button v-for="s in rhymeSuffixes" :key="s" @click="rimaPilihan[panel.key].suffix = s"
+            class="pill !text-xs border-2 transition"
+            :class="rimaPilihan[panel.key].suffix === s
+              ? (panel.key === 'A' ? 'bg-sky-500 text-white border-sky-500' : 'bg-emerald-500 text-white border-emerald-500')
+              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'">
+            {{ s }}
+          </button>
+        </div>
+
+        <div v-if="rimaPilihan[panel.key].suffix">
+          <p class="text-xs font-bold text-slate-500 mb-2">Kata:</p>
+          <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div v-for="(label, kat) in kategoriLabel" :key="kat">
+              <p class="text-xs font-bold text-slate-400 mb-1">{{ label }}</p>
+              <div class="flex flex-wrap gap-1.5">
+                <button v-for="k in (rhymeWords[rimaPilihan[panel.key].suffix]?.[kat] || [])" :key="k"
+                  @click="pakaiKata(k)"
+                  class="pill bg-white text-slate-700 border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 transition !text-xs">
+                  {{ k }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p v-else class="text-xs font-semibold text-slate-400 italic">Pilih akhiran dulu 🌳</p>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { kataRima } from '~/data/konten'
+import { rhymeSuffixes, rhymeWords, kategoriLabel } from '~/data/kotak'
 
 definePageMeta({ layout: 'app', middleware: 'auth' })
 
@@ -76,6 +127,17 @@ const baris = ref<string[]>(['', '', '', ''])
 const menyimpan = ref(false)
 const tersimpan = ref(false)
 const error = ref('')
+const tampilRima = ref(false)
+
+/** Panel rima A/B untuk referensi (diadaptasi dari /kotak/rima). */
+const rimaPanels = [
+  { key: 'A' as const, title: '🅰️ Rima A — Baris 1 & 3' },
+  { key: 'B' as const, title: '🅱️ Rima B — Baris 2 & 4' },
+]
+const rimaPilihan = ref({
+  A: { suffix: '' },
+  B: { suffix: '' },
+})
 
 const bisaSimpan = computed(() => baris.value.every(b => b.trim()))
 
