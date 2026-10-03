@@ -16,7 +16,28 @@
         Isi identitasmu dulu ya, baru kita mulai berkreasi! 🎨
       </p>
 
-      <form @submit.prevent="masuk" class="text-left space-y-4">
+      <!-- Pemilih akun: muncul bila ada >1 akun dengan nama+kelas yang sama -->
+      <div v-if="tampilPicker" class="text-left">
+        <p class="font-extrabold text-slate-700">Kami menemukan {{ kandidat.length }} akun dengan nama dan kelas yang sama 🤔</p>
+        <p class="text-sm font-semibold text-slate-500 mt-1 mb-4">Pilih akunmu di bawah ini ya! 👇</p>
+        <div class="space-y-2.5">
+          <button v-for="k in kandidat" :key="k.id" @click="pilihAkun(k)"
+            class="w-full text-left card !p-4 hover:border-emerald-300 hover:bg-emerald-50/60 transition">
+            <p class="font-extrabold text-slate-700">{{ k.nama_lengkap }}</p>
+            <p class="text-sm font-semibold text-slate-500">Kelas {{ k.kelas || '—' }} • No. absen {{ k.no_absen || '—' }}</p>
+            <p class="text-xs font-bold text-slate-400 mt-0.5">Terdaftar sejak {{ formatTanggal(k.created_at) }}</p>
+          </button>
+        </div>
+        <button class="btn-soft w-full mt-4" @click="buatBaruDariPicker" :disabled="loading">
+          {{ loading ? 'Membuat...' : '➕ Bukan salah satu di atas? Buat akun baru' }}
+        </button>
+        <button class="w-full mt-2 text-sm font-bold text-slate-400 hover:text-slate-600 transition" @click="tampilPicker = false">
+          ← Kembali
+        </button>
+        <p v-if="error" class="text-rose-500 text-sm font-bold mt-3">{{ error }}</p>
+      </div>
+
+      <form v-else @submit.prevent="masuk" class="text-left space-y-4">
         <div>
           <label class="block font-bold text-slate-700 mb-1.5">
             Nama Lengkap <span class="text-rose-500">*</span>
@@ -64,6 +85,48 @@ const tombolTeks = ref('Menyimpan...')
 
 const sfx = useSound()
 
+// Kandidat akun yang cocok (nama+kelas sama) — untuk pemilih akun anti-kembar
+const kandidat = ref<any[]>([])
+const tampilPicker = ref(false)
+
+function formatTanggal(s: string) {
+  if (!s) return '—'
+  return new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+/** Terapkan sesi lalu masuk ke menu utama. */
+function terapkanSesi(nama: string, absen: string, kls: string, id: string, kembali: boolean) {
+  namaLengkap.value = nama
+  noAbsen.value = absen
+  kelas.value = kls
+  siswaId.value = id
+  datangKembali.value = kembali
+  save()
+  if (kembali) sfx.success()
+  else sfx.pop()
+  navigateTo('/pilih')
+}
+
+/** Masuk memakai akun yang sudah ada (tidak membuat duplikat). */
+function masukDenganAkun(s: any, n: string, absen: string, kls: string) {
+  tampilPicker.value = false
+  loading.value = false
+  terapkanSesi(n, absen, kls, s.id, true)
+}
+
+/** Buat akun siswa baru di database. */
+async function buatAkunBaru(n: string, absen: string, kls: string) {
+  const { data, error: err } = await supabase!
+    .from('siswa')
+    .insert({ nama_lengkap: n, no_absen: absen || null, kelas: kls || null })
+    .select('id')
+    .single()
+  if (err) throw err
+  tampilPicker.value = false
+  loading.value = false
+  terapkanSesi(n, absen, kls, data.id, false)
+}
+
 async function masuk() {
   const n = namaInput.value.trim()
   if (!n) {
@@ -85,56 +148,75 @@ async function masuk() {
   error.value = ''
   loading.value = true
   tombolTeks.value = 'Mencari datamu...'
-  let id = ''
-  let datangKembaliLogin = false
-  if (supabase) {
-    try {
-      // 1) Cari dulu: apakah siswa ini sudah terdaftar?
-      //    Identitas = nama lengkap + kelas (perbandingan tanpa huruf besar/kecil & spasi berlebih).
-      const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
-      const targetNama = norm(n)
-      const targetKelas = norm(kls)
-      const { data: daftar, error: errCari } = await supabase
-        .from('siswa')
-        .select('id, nama_lengkap, no_absen, kelas, created_at')
-        .order('created_at', { ascending: false })
-        .limit(200)
-      if (errCari) throw errCari
-      const cocok = (daftar ?? []).find((s: any) =>
-        norm(s.nama_lengkap ?? '') === targetNama &&
-        norm(s.kelas ?? '') === targetKelas
-      )
-      if (cocok) {
-        // Siswa terdaftar → masuk dengan akun yang sudah ada (tidak duplikat).
-        id = cocok.id
-        datangKembaliLogin = true
-      } else {
-        // 2) Belum terdaftar → buat akun baru.
-        const { data, error: err } = await supabase
-          .from('siswa')
-          .insert({ nama_lengkap: n, no_absen: absen || null, kelas: kls || null })
-          .select('id')
-          .single()
-        if (err) throw err
-        id = data.id
-      }
-    } catch (e) {
-      console.error(e)
-      error.value = 'Gagal menyimpan ke database. Coba lagi ya!'
-      loading.value = false
-      return
-    }
-  } else {
-    id = 'lokal-' + Date.now().toString(36)
+  tampilPicker.value = false
+
+  // Mode lokal: langsung buat sesi lokal
+  if (!supabase) {
+    loading.value = false
+    terapkanSesi(n, absen, kls, 'lokal-' + Date.now().toString(36), false)
+    return
   }
-  namaLengkap.value = n
-  noAbsen.value = absen
-  kelas.value = kls
-  siswaId.value = id
-  datangKembali.value = datangKembaliLogin
-  save()
-  if (datangKembaliLogin) sfx.success()
-  else sfx.pop()
-  await navigateTo('/pilih')
+
+  try {
+    // Cari kandidat: nama + kelas sama (tanpa peduli huruf besar/kecil & spasi berlebih)
+    const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+    const targetNama = norm(n)
+    const targetKelas = norm(kls)
+    const { data: daftar, error: errCari } = await supabase
+      .from('siswa')
+      .select('id, nama_lengkap, no_absen, kelas, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200)
+    if (errCari) throw errCari
+    const cocokSemua = (daftar ?? []).filter((s: any) =>
+      norm(s.nama_lengkap ?? '') === targetNama &&
+      norm(s.kelas ?? '') === targetKelas
+    )
+
+    if (cocokSemua.length === 0) {
+      // Belum terdaftar → buat akun baru
+      await buatAkunBaru(n, absen, kls)
+    } else if (cocokSemua.length === 1) {
+      // Tepat satu → langsung masuk dengan akun itu
+      masukDenganAkun(cocokSemua[0], n, absen, kls)
+    } else {
+      // Lebih dari satu (nama kembar sekelas) → coba persempit dengan no. absen
+      let unik: any | null = null
+      if (absen) {
+        const cocokAbsen = cocokSemua.filter((s: any) => (s.no_absen ?? '').toString().trim() === absen)
+        if (cocokAbsen.length === 1) unik = cocokAbsen[0]
+      }
+      if (unik) {
+        masukDenganAkun(unik, n, absen, kls)
+      } else {
+        // Tidak bisa ditentukan unik → tampilkan pemilih akun
+        kandidat.value = cocokSemua
+        tampilPicker.value = true
+        loading.value = false
+      }
+    }
+  } catch (e) {
+    console.error(e)
+    error.value = 'Gagal menyimpan ke database. Coba lagi ya!'
+    loading.value = false
+  }
+}
+
+/** Siswa memilih salah satu akun dari pemilih akun. */
+function pilihAkun(s: any) {
+  masukDenganAkun(s, namaInput.value.trim(), absenInput.value.trim(), kelasInput.value.trim())
+}
+
+/** Dari pemilih akun: paksa buat akun baru (bukan salah satu kandidat). */
+async function buatBaruDariPicker() {
+  loading.value = true
+  tombolTeks.value = 'Membuat akun...'
+  try {
+    await buatAkunBaru(namaInput.value.trim(), absenInput.value.trim(), kelasInput.value.trim())
+  } catch (e) {
+    console.error(e)
+    error.value = 'Gagal membuat akun. Coba lagi ya!'
+    loading.value = false
+  }
 }
 </script>

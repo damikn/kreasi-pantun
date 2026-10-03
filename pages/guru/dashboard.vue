@@ -85,7 +85,8 @@
               <th class="pb-2 pr-3 font-bold">APP</th>
               <th class="pb-2 pr-3 font-bold">FENOMENA</th>
               <th v-if="adaSkor" class="pb-2 pr-3 font-bold">SKOR</th>
-              <th class="pb-2 font-bold">TANGGAL</th>
+              <th class="pb-2 pr-3 font-bold">TANGGAL</th>
+              <th class="pb-2 font-bold">AKSI</th>
             </tr>
           </thead>
           <tbody>
@@ -99,7 +100,14 @@
               </td>
               <td class="py-2.5 pr-3 font-semibold text-slate-500">{{ fenomenaMap[k.fenomena_id] ?? '—' }}</td>
               <td v-if="adaSkor" class="py-2.5 pr-3 font-extrabold" :class="skorClass(k.skor)">{{ k.skor ?? '—' }}</td>
-              <td class="py-2.5 font-semibold text-slate-500 whitespace-nowrap">{{ formatTanggal(k.created_at) }}</td>
+              <td class="py-2.5 pr-3 font-semibold text-slate-500 whitespace-nowrap">{{ formatTanggal(k.created_at) }}</td>
+              <td class="py-2.5">
+                <span class="inline-flex items-center gap-1.5">
+                  <NuxtLink :to="`/guru/karya/${k.id}`" class="btn-soft !px-3 !py-1.5 text-xs whitespace-nowrap">👁️ Lihat</NuxtLink>
+                  <span v-if="k.nilai_guru !== null && k.nilai_guru !== undefined" title="Sudah dinilai guru"
+                    class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-100 text-violet-700 text-xs font-extrabold">✓</span>
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -223,16 +231,20 @@ async function muatSemua() {
   } catch (e) { console.error('[dashboard] siswa:', e) }
 
   try {
-    const { data, adaSkor: ok } = await fetchKaryaList(
-      'id, siswa_id, app, fenomena_id, pola_id, skor, created_at, siswa:siswa_id(nama_lengkap, kelas)',
-      'id, siswa_id, app, fenomena_id, pola_id, created_at, siswa:siswa_id(nama_lengkap, kelas)',
+    const FIELDS = 'id, siswa_id, app, fenomena_id, pola_id, created_at, siswa:siswa_id(nama_lengkap, kelas)'
+    const { data, fitur } = await fetchKaryaList(
+      [
+        { fields: `${FIELDS}, skor, nilai_guru`, fitur: { skor: true, penilaian: true } },
+        { fields: `${FIELDS}, skor`, fitur: { skor: true, penilaian: false } },
+        { fields: FIELDS, fitur: { skor: false, penilaian: false } },
+      ],
       (fields) => supabase.from('karya')
         .select(fields)
         .order('created_at', { ascending: false })
         .limit(500),
     )
     daftarKarya.value = data
-    adaSkor.value = ok
+    adaSkor.value = fitur.skor
   } catch (e) { console.error('[dashboard] karya:', e) }
 
   try {

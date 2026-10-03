@@ -17,6 +17,15 @@
       </span>
     </div>
 
+    <!-- Penilaian guru (bila sudah dinilai) -->
+    <div v-if="penilaian" class="card p-4 mb-4 border-2 border-violet-100">
+      <div class="flex items-center justify-between">
+        <p class="font-display font-bold text-slate-700">🎓 Nilai Guru</p>
+        <span class="font-display text-3xl font-extrabold text-violet-600">{{ penilaian.nilai_guru }}<span class="text-base text-slate-400">/100</span></span>
+      </div>
+      <p v-if="penilaian.komentar_guru" class="text-sm font-semibold text-slate-500 mt-2 whitespace-pre-wrap">💬 {{ penilaian.komentar_guru }}</p>
+    </div>
+
     <!-- Kartu karya -->
     <div ref="kartuRef" class="rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-200"
       style="background: linear-gradient(160deg,#fffbeb 0%,#ecfdf5 60%,#eff6ff 100%)">
@@ -88,10 +97,25 @@ const tanggal = computed(() => {
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const mengunduh = ref(false)
+const penilaian = ref<{ nilai_guru: number; komentar_guru: string | null } | null>(null)
 
 function buatLagi() {
   resetKotak()
 }
+
+// Ambil ulang penilaian guru (bila karya ini sudah dinilai setelah disimpan)
+onMounted(async () => {
+  const id = karya.value?.id
+  const sb = useSupabase()
+  if (!sb || !id || String(id).startsWith('lokal-')) return
+  try {
+    const { data, error } = await sb.from('karya')
+      .select('nilai_guru, komentar_guru').eq('id', id).maybeSingle()
+    if (!error && data && data.nilai_guru !== null && data.nilai_guru !== undefined) {
+      penilaian.value = data
+    }
+  } catch { /* kolom belum ada / offline → abaikan */ }
+})
 
 /** Render kartu karya ke canvas lalu unduh sebagai PNG (tanpa library tambahan). */
 function unduhGambar() {
