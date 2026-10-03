@@ -76,8 +76,10 @@
       <div v-if="!karyaTampil.length" class="text-center text-slate-400 font-bold py-8">
         {{ memuat ? 'Memuat...' : 'Belum ada karya yang cocok dengan filter.' }}
       </div>
-      <div v-else class="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
-        <table class="w-full text-sm min-w-[640px]">
+      <div v-else>
+        <!-- Desktop: tabel -->
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full text-sm min-w-[640px]">
           <thead>
             <tr class="text-left text-xs text-slate-400 border-b border-amber-100">
               <th class="pb-2 pr-3 font-bold">SISWA</th>
@@ -110,7 +112,29 @@
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </div>
+        <!-- Mobile: kartu karya -->
+        <div class="md:hidden space-y-3">
+          <NuxtLink v-for="k in karyaTampil" :key="'mk-' + k.id" :to="`/guru/karya/${k.id}`"
+            class="block rounded-2xl border border-amber-100 bg-amber-50/60 p-4 active:scale-[0.99] transition">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-extrabold text-slate-700 truncate">{{ k.siswa?.nama_lengkap ?? '—' }}</p>
+                <p class="text-xs font-bold text-slate-400 mt-0.5 truncate">{{ k.siswa?.kelas ?? '—' }} • {{ fenomenaMap[k.fenomena_id] ?? '—' }}</p>
+              </div>
+              <span class="pill shrink-0" :class="k.app === 'kotak' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">{{ k.app === 'kotak' ? '📦' : '🌟' }}</span>
+            </div>
+            <div class="flex items-center justify-between mt-3">
+              <p class="text-xs font-bold text-slate-400">{{ formatTanggal(k.created_at) }}</p>
+              <p class="text-sm font-extrabold flex items-center gap-1.5">
+                <span v-if="adaSkor" :class="skorClass(k.skor)">Skor {{ k.skor ?? '—' }}</span>
+                <span v-if="k.nilai_guru !== null && k.nilai_guru !== undefined" class="text-violet-600">✓</span>
+                <span>👁️</span>
+              </p>
+            </div>
+          </NuxtLink>
+        </div>
       </div>
     </div>
 
@@ -120,8 +144,10 @@
       <div v-if="!siswaTampil.length" class="text-center text-slate-400 font-bold py-8">
         {{ memuat ? 'Memuat...' : 'Belum ada siswa terdaftar.' }}
       </div>
-      <div v-else class="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
-        <table class="w-full text-sm min-w-[560px]">
+      <div v-else>
+        <!-- Desktop: tabel -->
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full text-sm min-w-[560px]">
           <thead>
             <tr class="text-left text-xs text-slate-400 border-b border-amber-100">
               <th class="pb-2 pr-3 font-bold">NAMA</th>
@@ -140,7 +166,21 @@
               <td class="py-2.5 font-semibold text-slate-500 whitespace-nowrap">{{ s.terakhir ? formatTanggal(s.terakhir) : '—' }}</td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </div>
+        <!-- Mobile: kartu siswa -->
+        <div class="md:hidden space-y-3">
+          <div v-for="s in siswaTampil" :key="'ms-' + s.id" class="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-extrabold text-slate-700 truncate">{{ s.nama_lengkap }}</p>
+                <p class="text-xs font-bold text-slate-400 mt-0.5">Kelas {{ s.kelas || '—' }} • No. absen {{ s.no_absen || '—' }}</p>
+              </div>
+              <span class="pill bg-sky-100 text-sky-700 shrink-0">{{ s.jmlKarya }} karya</span>
+            </div>
+            <p class="text-xs font-bold text-slate-400 mt-3">Terakhir aktif: {{ s.terakhir ? formatTanggal(s.terakhir) : '—' }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
