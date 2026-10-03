@@ -72,7 +72,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
 
-const { namaLengkap, noAbsen, kelas, siswaId, datangKembali, save } = useSession()
+const { namaLengkap, noAbsen, kelas, siswaId, datangKembali, guruAuthed, save } = useSession()
 const supabase = useSupabase()
 const supabaseReady = useSupabaseReady()
 
@@ -96,6 +96,8 @@ function formatTanggal(s: string) {
 
 /** Terapkan sesi lalu masuk ke menu utama. */
 function terapkanSesi(nama: string, absen: string, kls: string, id: string, kembali: boolean) {
+  // Mode saling eksklusif: login siswa mematikan mode guru (perangkat bersama)
+  guruAuthed.value = false
   namaLengkap.value = nama
   noAbsen.value = absen
   kelas.value = kls

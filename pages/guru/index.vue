@@ -31,7 +31,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
 
-const { guruAuthed, save } = useSession()
+const { guruAuthed, save, logout } = useSession()
 const kode = ref('')
 const error = ref('')
 
@@ -49,6 +49,8 @@ function masuk() {
   const config = useRuntimeConfig()
   const diterima = [kodeHariIni(), (config.public.guruCode as string) || ''].filter(Boolean)
   if (diterima.includes(kode.value.trim())) {
+    // Mode saling eksklusif: login guru membersihkan sesi siswa (perangkat bersama)
+    logout()
     guruAuthed.value = true
     save()
     navigateTo('/guru/dashboard')
