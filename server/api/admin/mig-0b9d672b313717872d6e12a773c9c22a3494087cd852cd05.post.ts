@@ -1,31 +1,25 @@
 import { Client } from 'pg'
-const HOSTS = [
-  { host: 'db.lfteugcuncnzpllrlzse.supabase.co', port: 5432, user: 'postgres' },
-  { host: 'aws-0-ap-southeast-1.pooler.supabase.com', port: 6543, user: 'postgres.lfteugcuncnzpllrlzse' },
-]
-export default defineEventHandler(async () => {
-  const errors: string[] = []
-  for (const h of HOSTS) {
-    try {
-      const client = new Client({
-        ...h,
-        password: process.env.MIGRATION_DB_PASSWORD,
-        database: 'postgres',
-        ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 15000,
-      })
-      await client.connect()
+const REGIONS = ['ap-southeast-3', 'ap-southeast-2', 'ap-northeast-1', 'ap-south-1', 'ap-northeast-2', 'us-east-1', 'eu-west-1']
+export default defineEventHandler(async (event) => {
+  const q = getQuery(event)
+  if (q.probe) {
+    // mode probe: cari region yang benar
+    const out: string[] = []
+    for (const r of REGIONS) {
       try {
-        const sql = await $fetch<string>('https://raw.githubusercontent.com/damikn/kreasi-pantun/main/supabase/migrations/002_kotak_refresh.sql')
-        await client.query(sql)
-        const counts = await client.query(
-          `SELECT 'fenomena_kotak' AS t, COUNT(*) AS c FROM fenomena WHERE app='kotak' UNION ALL
-           SELECT 'pola', COUNT(*) FROM pola UNION ALL
-           SELECT 'kata_rima', COUNT(*) FROM kata_rima`
-        )
-        return { ok: true, via: h.host, counts: counts.rows }
-      } finally { await client.end() }
-    } catch (e: any) { errors.push(`${h.host}: ${e?.message}`) }
+        const c = new Client({
+          host: `aws-0-${r}.pooler.supabase.com`, port: 6543,
+          user: 'postgres.lfteugcuncnzpllrlzse',
+          password: process.env.MIGRATION_DB_PASSWORD, database: 'postgres',
+          ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000,
+        })
+        await c.connect()
+        await c.query('select 1')
+        await c.end()
+        out.push(`${r}: OK`)
+      } catch (e: any) { out.push(`${r}: ${String(e?.message).slice(0, 80)}`) }
+    }
+    return { out }
   }
-  return { ok: false, errors }
+  return { ok: false, error: 'use ?probe=1' }
 })
