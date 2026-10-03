@@ -1,10 +1,24 @@
 -- ============================================================
--- Kreasi Pantun — data awal (seed)
--- Sumber: content/kotak/*.json (repo damikn/Kotak-Kreasi)
--- Jalankan SETELAH schema.sql
+-- Migrasi 002: selaraskan DB dengan content/kotak/*.json
+-- (repo damikn/Kotak-Kreasi) + kolom baru karya.skor,
+-- pola.aturan, pola.rule_type.
+-- Aplikasi masih baru — karya Kotak Kreasi yang ada (jika ada)
+-- memakai fenomena_id/pola_id lama sehingga ikut dibersihkan.
+-- Cara pakai: Supabase Dashboard > SQL Editor > paste > Run.
 -- ============================================================
 
--- ---- Fenomena: Kotak Kreasi (id 1-8) ----
+-- Kolom baru
+alter table public.karya add column if not exists skor integer;
+alter table public.pola add column if not exists aturan text;
+alter table public.pola add column if not exists rule_type text;
+
+-- Bersihkan master data lama
+delete from public.kata_rima;
+delete from public.karya where app = 'kotak';
+delete from public.pola;
+delete from public.fenomena where app = 'kotak';
+
+-- Fenomena baru (id 1-8)
 insert into public.fenomena (id, nama, deskripsi, icon, app) values
 (1, 'Terlalu Lama Bermain Gawai?', 'Gawai dapat digunakan untuk belajar, berkomunikasi, dan mencari informasi. Namun, penggunaan gawai yang terlalu lama dapat membuat seseorang lupa belajar, lupa beristirahat, atau kurang memperhatikan orang di sekitarnya.', '📱', 'kotak'),
 (2, 'Bermain Gim Sampai Lupa Waktu?', 'Bermain gim dapat menjadi kegiatan yang menyenangkan. Namun, bermain terlalu lama dapat membuat seseorang lupa waktu dan mengabaikan kewajibannya sebagai pelajar.', '🎮', 'kotak'),
@@ -15,18 +29,7 @@ insert into public.fenomena (id, nama, deskripsi, icon, app) values
 (7, 'Mengapa Datang Terlambat?', 'Datang tepat waktu merupakan salah satu bentuk kedisiplinan. Kebiasaan bangun kesiangan atau tidak mempersiapkan keperluan sejak awal dapat menyebabkan seseorang terlambat ke sekolah.', '⏰', 'kotak'),
 (8, 'Siapa yang Menjaga Kebersihan Kelas?', 'Kebersihan kelas merupakan tanggung jawab seluruh siswa, bukan hanya siswa yang mendapat jadwal piket. Jika setiap siswa tidak peduli terhadap kebersihan, kelas dapat menjadi kotor dan tidak nyaman untuk belajar.', '🧹', 'kotak');
 
--- ---- Fenomena: 5E (id 101-108) ----
-insert into public.fenomena (id, nama, deskripsi, icon, app) values
-(101, 'Kebersihan kelas', 'Sampah yang berserakan membuat ruang kelas terlihat kurang nyaman.', '🧹', '5e'),
-(102, 'Membantu teman', 'Seorang teman kesulitan membawa buku yang banyak.', '📚', '5e'),
-(103, 'Penggunaan gawai', 'Bermain gawai terus-menerus hingga lupa waktu belajar.', '📱', '5e'),
-(104, 'Menunda tugas', 'Pekerjaan sekolah dikerjakan mepet tenggat waktu.', '⏳', '5e'),
-(105, 'Menjaga lingkungan', 'Menanam pohon dan merawat kebersihan sekitar rumah.', '🌳', '5e'),
-(106, 'Menghargai teman', 'Mendengarkan pendapat teman dengan sopan dan terbuka.', '💛', '5e'),
-(107, 'Disiplin waktu', 'Datang tepat waktu dan mengatur jadwal dengan baik.', '⏰', '5e'),
-(108, 'Kerja sama', 'Bekerja dalam kelompok untuk mencapai tujuan bersama.', '👥', '5e');
-
--- ---- Pola pantun Kotak Kreasi (id 1-12) ----
+-- Pola baru (id 1-12)
 insert into public.pola (id, nomor, nama, deskripsi_sampiran, deskripsi_isi, aturan, rule_type, contoh) values
 (1, 1, 'Repetisi pada Awal Sampiran',
  'Gunakan pengulangan kata pada awal sampiran',
@@ -137,7 +140,7 @@ Melewati ladang dan sawah hijau,
 Jika bukan kita yang menjaga,
 Siapa lagi pelindung bumi kita?');
 
--- ---- Kata rima Kotak Kreasi (30 akhiran x 3 kategori) ----
+-- Kata rima baru
 insert into public.kata_rima (kata, akhiran, kategori) values
 ('mata', '-a', 'kata_benda'),
 ('cinta', '-a', 'kata_benda'),

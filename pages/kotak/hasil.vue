@@ -8,6 +8,15 @@
   </div>
 
   <div class="max-w-xl mx-auto">
+    <!-- Skor -->
+    <div v-if="karya?.skor !== undefined" class="card p-4 mb-4 flex items-center justify-between">
+      <p class="font-display font-bold text-slate-700">🤖 Skor Otomatis</p>
+      <span class="font-display text-3xl font-extrabold"
+        :class="karya.skor >= 80 ? 'text-emerald-600' : karya.skor >= 60 ? 'text-amber-600' : 'text-slate-500'">
+        {{ karya.skor }}<span class="text-base text-slate-400">/100</span>
+      </span>
+    </div>
+
     <!-- Kartu karya -->
     <div ref="kartuRef" class="rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-200"
       style="background: linear-gradient(160deg,#fffbeb 0%,#ecfdf5 60%,#eff6ff 100%)">
@@ -26,8 +35,26 @@
           <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">FENOMENA</p><p class="font-bold text-slate-700">{{ karya?.fenomenaIcon }} {{ karya?.fenomena }}</p></div>
           <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">POLA</p><p class="font-bold text-slate-700">{{ karya?.pola }}</p></div>
         </div>
-        <p class="text-xs font-bold text-slate-400 mt-4">Kata rima: {{ karya?.rima?.join(', ') }}</p>
+        <div v-if="karya?.rimaA?.suffix" class="grid grid-cols-2 gap-2 mt-2 text-left text-sm">
+          <div class="bg-sky-50 rounded-xl p-3"><p class="font-bold text-sky-500 text-xs">RIMA A (b1&3) {{ karya.rimaA.suffix }}</p><p class="font-bold text-slate-700">{{ karya.rimaA.words.join(', ') }}</p></div>
+          <div class="bg-emerald-50 rounded-xl p-3"><p class="font-bold text-emerald-500 text-xs">RIMA B (b2&4) {{ karya.rimaB.suffix }}</p><p class="font-bold text-slate-700">{{ karya.rimaB.words.join(', ') }}</p></div>
+        </div>
+        <p v-else class="text-xs font-bold text-slate-400 mt-4">Kata rima: {{ karya?.rima?.join(', ') }}</p>
         <p class="font-display font-bold text-amber-600 mt-4 italic">"Setiap kata adalah langkah kecil menuju perubahan besar. Teruslah berkarya!"</p>
+      </div>
+    </div>
+
+    <!-- Checklist validasi -->
+    <div v-if="karya?.checks?.length" class="card p-5 mt-4">
+      <p class="font-display font-bold text-slate-700 mb-3">📋 Hasil Penilaian</p>
+      <div class="space-y-2">
+        <div v-for="c in karya.checks" :key="c.key" class="flex items-start gap-2 text-sm">
+          <span class="text-base leading-none">{{ c.passed ? '✅' : '❌' }}</span>
+          <div>
+            <p class="font-bold" :class="c.passed ? 'text-emerald-700' : 'text-slate-600'">{{ c.label }}</p>
+            <p class="text-xs font-semibold text-slate-400">{{ c.detail }}</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -40,7 +67,7 @@
     </div>
   </div>
 
-  <canvas ref="canvasRef" width="1080" height="1350" class="hidden"></canvas>
+  <canvas ref="canvasRef" width="1080" height="1450" class="hidden"></canvas>
 </template>
 
 <script setup lang="ts">
@@ -72,7 +99,7 @@ function unduhGambar() {
   if (!canvas || !karya.value) return
   mengunduh.value = true
   const ctx = canvas.getContext('2d')!
-  const W = 1080, H = 1350
+  const W = 1080, H = 1450
 
   // Latar
   const g = ctx.createLinearGradient(0, 0, 0, H)
@@ -86,21 +113,28 @@ function unduhGambar() {
   }
   deco(120, 180, 90, 'rgba(52,211,153,.15)')
   deco(960, 240, 120, 'rgba(251,191,36,.18)')
-  deco(940, 1150, 100, 'rgba(56,189,248,.15)')
-  deco(140, 1180, 70, 'rgba(167,139,250,.15)')
+  deco(940, 1250, 100, 'rgba(56,189,248,.15)')
+  deco(140, 1280, 70, 'rgba(167,139,250,.15)')
 
   ctx.textAlign = 'center'
   ctx.fillStyle = '#b45309'
   ctx.font = 'bold 34px sans-serif'
-  ctx.fillText('📦 KOTAK KREASI', W / 2, 120)
+  ctx.fillText('📦 KOTAK KREASI', W / 2, 110)
 
   ctx.fillStyle = '#1e293b'
   ctx.font = '800 64px sans-serif'
-  ctx.fillText('Pantun Karyaku', W / 2, 210)
+  ctx.fillText('Pantun Karyaku', W / 2, 200)
+
+  // Skor
+  if (karya.value.skor !== undefined) {
+    ctx.fillStyle = karya.value.skor >= 80 ? '#059669' : karya.value.skor >= 60 ? '#d97706' : '#64748b'
+    ctx.font = '800 56px sans-serif'
+    ctx.fillText(`⭐ Skor: ${karya.value.skor}/100`, W / 2, 275)
+  }
 
   // Kotak pantun
   ctx.fillStyle = 'rgba(255,255,255,.75)'
-  const boxY = 260, boxH = 340
+  const boxY = 320, boxH = 340
   roundRect(ctx, 90, boxY, W - 180, boxH, 36); ctx.fill()
   ctx.fillStyle = '#334155'
   ctx.font = 'italic 600 44px sans-serif'
@@ -117,7 +151,7 @@ function unduhGambar() {
     ['POLA', karya.value.pola]
   ]
   info.forEach(([label, val], i) => {
-    const y = 700 + i * 110
+    const y = 760 + i * 110
     ctx.fillStyle = 'rgba(255,255,255,.65)'
     roundRect(ctx, 90, y, W - 180, 92, 24); ctx.fill()
     ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 24px sans-serif'
@@ -128,10 +162,13 @@ function unduhGambar() {
 
   ctx.textAlign = 'center'
   ctx.fillStyle = '#94a3b8'; ctx.font = '600 28px sans-serif'
-  ctx.fillText('Kata rima: ' + (karya.value.rima || []).join(', '), W / 2, 1170, W - 200)
+  const rimaTxt = karya.value.rimaA?.suffix
+    ? `Rima A ${karya.value.rimaA.suffix}: ${(karya.value.rimaA.words || []).join(', ')}  |  Rima B ${karya.value.rimaB.suffix}: ${(karya.value.rimaB.words || []).join(', ')}`
+    : 'Kata rima: ' + (karya.value.rima || []).join(', ')
+  ctx.fillText(rimaTxt, W / 2, 1230, W - 200)
   ctx.fillStyle = '#d97706'; ctx.font = 'italic bold 30px sans-serif'
-  ctx.fillText('"Setiap kata adalah langkah kecil menuju perubahan besar."', W / 2, 1230, W - 160)
-  ctx.fillText('Teruslah berkarya! ✨', W / 2, 1275)
+  ctx.fillText('"Setiap kata adalah langkah kecil menuju perubahan besar."', W / 2, 1290, W - 160)
+  ctx.fillText('Teruslah berkarya! ✨', W / 2, 1335)
 
   const a = document.createElement('a')
   a.download = `pantun-${karya.value.nama.replace(/\s+/g, '-').toLowerCase()}.png`

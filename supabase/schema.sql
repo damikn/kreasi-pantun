@@ -38,6 +38,8 @@ create table public.pola (
   nama text not null,
   deskripsi_sampiran text,
   deskripsi_isi text,
+  aturan text,
+  rule_type text,
   contoh text
 );
 
@@ -61,6 +63,7 @@ create table public.karya (
   baris3 text not null,
   baris4 text not null,
   rima_dipilih text[] not null default '{}',
+  skor integer,
   created_at timestamptz not null default now()
 );
 create index idx_karya_created on public.karya(created_at desc);
