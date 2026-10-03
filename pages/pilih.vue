@@ -1,5 +1,8 @@
 <template>
   <div class="text-center mb-8">
+    <div v-if="datangKembali" class="inline-block bg-emerald-100 text-emerald-700 font-bold text-sm rounded-full px-5 py-2 mb-3">
+      🎉 Selamat datang kembali! Akunmu ditemukan, tidak perlu daftar lagi.
+    </div>
     <h1 class="page-title">Halo, {{ namaLengkap }}! 👋</h1>
     <p v-if="kelas || noAbsen" class="page-sub">
       {{ [kelas ? `Kelas ${kelas}` : '', noAbsen ? `No. Absen ${noAbsen}` : ''].filter(Boolean).join(' • ') }}
@@ -41,11 +44,27 @@
       <span class="btn-primary mt-6">Mulai Belajar →</span>
     </NuxtLink>
   </div>
+
+  <div class="max-w-3xl mx-auto mt-6 text-center">
+    <NuxtLink to="/karyaku" data-no-sound @click="sfx.swoosh()"
+      class="card p-5 inline-flex items-center gap-4 hover:scale-[1.02] hover:shadow-xl transition text-left w-full">
+      <div class="text-5xl">📖</div>
+      <div class="flex-1">
+        <h2 class="font-display text-xl font-extrabold text-slate-800">Buku Karyaku</h2>
+        <p class="text-slate-500 font-semibold text-sm">Lihat semua pantun yang pernah kamu buat.</p>
+      </div>
+      <span class="text-2xl">→</span>
+    </NuxtLink>
+  </div>
 </template>
 
 <script setup lang="ts">
 definePageMeta({ layout: 'app', middleware: 'auth' })
-const { namaLengkap, noAbsen, kelas, resetKotak } = useSession()
+const { namaLengkap, noAbsen, kelas, datangKembali, resetKotak } = useSession()
 const sfx = useSound()
 resetKotak()
+// Banner hanya tampil sekali setelah login ulang
+if (datangKembali.value) {
+  setTimeout(() => { datangKembali.value = false }, 6000)
+}
 </script>

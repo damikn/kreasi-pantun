@@ -1,6 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: false },
+  // SPA (tanpa SSR): seluruh logika sesi berjalan di browser.
+  // Ini memastikan sesi yang tersimpan di localStorage dipulihkan
+  // sebelum middleware auth berjalan — refresh tidak lagi me-logout.
+  ssr: false,
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
@@ -10,7 +14,11 @@ export default defineNuxtConfig({
       // Diisi lewat environment variable (jangan hardcode secret di kode):
       // NUXT_PUBLIC_SUPABASE_URL dan NUXT_PUBLIC_SUPABASE_ANON_KEY
       supabaseUrl: '',
-      supabaseAnonKey: ''
+      supabaseAnonKey: '',
+      // Kode akses dashboard guru (env NUXT_PUBLIC_GURU_CODE).
+      // Obfuskasi sederhana, bukan keamanan serius — cukup untuk
+      // membedakan guru dari siswa di lingkungan sekolah.
+      guruCode: '',
     }
   },
   app: {

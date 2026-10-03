@@ -65,7 +65,7 @@
           <p class="italic font-display font-semibold text-slate-700 text-sm leading-relaxed">
             {{ k.baris1 }}<br />{{ k.baris2 }}<br />{{ k.baris3 }}<br />{{ k.baris4 }}
           </p>
-          <p class="text-xs font-bold text-slate-400 mt-2">— karya siswa • {{ formatTanggal(k.created_at) }}</p>
+          <p class="text-xs font-bold text-slate-400 mt-2">— {{ k.siswa?.nama_lengkap ?? 'karya siswa' }}{{ k.siswa?.kelas ? ` • ${k.siswa.kelas}` : '' }} • {{ formatTanggal(k.created_at) }}</p>
         </div>
       </div>
       <p v-else class="text-center text-slate-400 font-semibold py-6">
@@ -140,7 +140,7 @@ async function muatGaleri() {
   try {
     const { data, error: err } = await supabase
       .from('karya')
-      .select('id, app, baris1, baris2, baris3, baris4, created_at')
+      .select('id, app, baris1, baris2, baris3, baris4, created_at, siswa:siswa_id(nama_lengkap, kelas)')
       .order('created_at', { ascending: false })
       .limit(12)
     if (err) throw err

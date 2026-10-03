@@ -1,0 +1,51 @@
+<template>
+  <div class="min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="card max-w-md w-full p-8 md:p-10 text-center relative overflow-hidden">
+      <div class="absolute -top-8 -right-8 text-[100px] opacity-10 select-none">👩‍🏫</div>
+
+      <div class="text-6xl mb-4">👩‍🏫</div>
+      <h1 class="font-display text-3xl font-extrabold text-slate-800">
+        Dashboard <span class="text-emerald-600">Guru</span>
+      </h1>
+      <p class="text-slate-500 font-semibold mt-3 mb-6">
+        Masukkan kode guru untuk melihat karya dan progres siswa.
+      </p>
+
+      <form @submit.prevent="masuk" class="text-left space-y-4">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1.5">Kode Guru</label>
+          <input v-model="kode" type="password" class="input-cute" placeholder="••••••" autocomplete="off" />
+        </div>
+        <p v-if="error" class="text-rose-500 text-sm font-bold">{{ error }}</p>
+        <button type="submit" class="btn-primary w-full !mt-6">Masuk 🔑</button>
+      </form>
+
+      <NuxtLink to="/" class="inline-block mt-5 text-sm font-bold text-slate-400 hover:text-emerald-600 transition">
+        ← Kembali ke halaman siswa
+      </NuxtLink>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+definePageMeta({ layout: false })
+
+const { guruAuthed, save } = useSession()
+const kode = ref('')
+const error = ref('')
+
+// Kode default bila env belum diisi — ganti via NUXT_PUBLIC_GURU_CODE.
+const KODE_DEFAULT = 'kreasi-guru'
+
+function masuk() {
+  const config = useRuntimeConfig()
+  const benar = (config.public.guruCode as string) || KODE_DEFAULT
+  if (kode.value.trim() === benar && kode.value.trim() !== '') {
+    guruAuthed.value = true
+    save()
+    navigateTo('/guru/dashboard')
+  } else {
+    error.value = 'Kode salah. Tanya kode yang benar ke admin ya!'
+  }
+}
+</script>

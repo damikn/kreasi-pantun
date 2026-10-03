@@ -9,9 +9,19 @@
           </span>
         </NuxtLink>
         <div class="flex items-center gap-2">
-          <span v-if="namaLengkap" class="pill bg-emerald-100 text-emerald-700">👋 {{ namaLengkap }}</span>
-          <span v-if="kelas" class="pill bg-sky-100 text-sky-700 hidden sm:inline-flex">🏫 {{ kelas }}</span>
-          <NuxtLink to="/pilih" class="btn-soft !px-4 !py-2 text-sm">🏠 Menu</NuxtLink>
+          <!-- Mode guru -->
+          <template v-if="guruAuthed">
+            <span class="pill bg-violet-100 text-violet-700">👩‍🏫 Guru</span>
+            <NuxtLink to="/guru/dashboard" class="btn-soft !px-4 !py-2 text-sm">📊 Dashboard</NuxtLink>
+            <button class="btn-soft !px-4 !py-2 text-sm" @click="keluarGuru">🚪 Keluar</button>
+          </template>
+          <!-- Mode siswa -->
+          <template v-else>
+            <span v-if="namaLengkap" class="pill bg-emerald-100 text-emerald-700">👋 {{ namaLengkap }}</span>
+            <span v-if="kelas" class="pill bg-sky-100 text-sky-700 hidden sm:inline-flex">🏫 {{ kelas }}</span>
+            <NuxtLink to="/pilih" class="btn-soft !px-4 !py-2 text-sm">🏠 Menu</NuxtLink>
+            <button v-if="namaLengkap" class="btn-soft !px-4 !py-2 text-sm" @click="keluarSiswa">🚪 Keluar</button>
+          </template>
           <SoundToggle />
         </div>
       </div>
@@ -26,5 +36,15 @@
 </template>
 
 <script setup lang="ts">
-const { namaLengkap, kelas } = useSession()
+const { namaLengkap, kelas, guruAuthed, logout, logoutGuru } = useSession()
+
+function keluarSiswa() {
+  logout()
+  navigateTo('/')
+}
+
+function keluarGuru() {
+  logoutGuru()
+  navigateTo('/guru')
+}
 </script>

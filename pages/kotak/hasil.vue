@@ -30,7 +30,7 @@
             class="font-display text-xl font-semibold text-slate-700 italic leading-relaxed">{{ b }}</p>
         </div>
         <div class="grid grid-cols-2 gap-2 mt-6 text-left text-sm">
-          <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">NAMA</p><p class="font-bold text-slate-700">{{ karya?.nama }}</p></div>
+          <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">NAMA</p><p class="font-bold text-slate-700">{{ karya?.nama || namaLengkap || '—' }}</p></div>
           <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">TANGGAL</p><p class="font-bold text-slate-700">{{ tanggal }}</p></div>
           <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">FENOMENA</p><p class="font-bold text-slate-700">{{ karya?.fenomenaIcon }} {{ karya?.fenomena }}</p></div>
           <div class="bg-white/60 rounded-xl p-3"><p class="font-bold text-slate-400 text-xs">POLA</p><p class="font-bold text-slate-700">{{ karya?.pola }}</p></div>
@@ -73,7 +73,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'app', middleware: 'auth' })
 
-const { karyaTerakhir, resetKotak } = useSession()
+const { karyaTerakhir, resetKotak, namaLengkap } = useSession()
 const supabaseReady = useSupabaseReady()
 const karya = computed(() => karyaTerakhir.value)
 
